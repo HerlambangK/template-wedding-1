@@ -373,7 +373,7 @@ export default function InteractiveMapSection() {
               transition={{ duration: 0.5 }}
             >
               <iframe
-                src="https://share.google/Jj5V9O9IkVr4q2jS5"
+                src="https://maps.google.com/maps?q=Resto+Nawasena+Madiun&output=embed"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

@@ -7,11 +7,12 @@ import { MapPin, Clock, Calendar, Shirt } from "lucide-react";
 interface EventInfo {
   date: string;
   time: string;
-  endTime: string;
+  endTime?: string;
   venue: string;
   address: string;
   mapsUrl: string;
   dressCode?: string;
+  showTime?: boolean;
 }
 
 function EventCard({
@@ -58,12 +59,14 @@ function EventCard({
           </p>
         </div>
 
-        <div className="flex items-start gap-3">
-          <Clock className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
-          <p className="font-[family-name:var(--font-lora)] text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
-            {event.time} - {event.endTime} WIB
-          </p>
-        </div>
+        {event.showTime !== false && (
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
+            <p className="font-[family-name:var(--font-lora)] text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
+              {event.time}{event.endTime ? ` - ${event.endTime} WIB` : ' WIB'}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-start gap-3">
           <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
@@ -106,9 +109,11 @@ function EventCard({
 export default function EventSection({
   akad,
   resepsi,
+  makanKeluarga,
 }: {
   akad: EventInfo;
   resepsi?: EventInfo | null;
+  makanKeluarga?: EventInfo | null;
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
@@ -131,6 +136,9 @@ export default function EventSection({
 
         <div className="grid gap-8 sm:grid-cols-1 max-w-md mx-auto">
           <EventCard title="Akad Nikah" event={akad} index={0} />
+          {makanKeluarga && (
+            <EventCard title="Makan Keluarga" event={makanKeluarga} index={1} />
+          )}
         </div>
       </div>
     </section>

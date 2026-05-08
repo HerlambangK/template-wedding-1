@@ -63,7 +63,7 @@ export default function Home() {
 
             <CoupleSection groom={config.groom} bride={config.bride} />
 
-            <EventSection akad={config.akad} resepsi={null} />
+            <EventSection akad={config.akad} resepsi={null} makanKeluarga={config.makanKeluarga} />
 
             <InteractiveMapSection />
 

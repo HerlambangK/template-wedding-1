@@ -219,6 +219,15 @@ export const config = {
 		mapsUrl: 'https://goo.gl/maps/kua-jiwan-madiun',
 		mapsEmbed:
 			'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.0!2d111.5!3d-7.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1',
+		showTime: false,
+	},
+
+	makanKeluarga: {
+		date: '2026-05-29',
+		time: '09:30',
+		venue: 'Resto Nawasena Madiun',
+		address: 'Nawasena, Madiun, Jawa Timur',
+		mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 	},
 
 	// 📍 Lokasi Penting
@@ -243,8 +252,8 @@ export const config = {
 		},
 		familyGathering: {
 			name: 'Resto Nawasena Madiun',
-			address: 'Madiun',
-			mapsUrl: 'https://share.google/Jj5V9O9IkVr4q2jS5',
+			address: 'Nawasena, Madiun, Jawa Timur',
+			mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 		},
 	},
 

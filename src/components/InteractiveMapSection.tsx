@@ -11,246 +11,307 @@ declare global {
   }
 }
 
+// ============= COORDINATES =============
+const WONOSARI: [number, number] = [-8.0084, 110.6067];
+const GROGOGAN: [number, number] = [-7.2, 111.65];
+const KUA: [number, number] = [-7.597, 111.5335];
+const NAWASENA: [number, number] = [-7.6337693, 111.5168667];
+
+// ============= ROUTES =============
+const ROUTE_H: [number, number][] = [
+  [-8.0084, 110.6067],
+  [-8.0, 110.7],
+  [-7.9, 110.9],
+  [-7.8, 111.1],
+  [-7.7, 111.25],
+  [-7.65, 111.35],
+  [-7.62, 111.45],
+  [-7.6, 111.52],
+  [-7.597, 111.5335],
+];
+
+const ROUTE_R: [number, number][] = [
+  [-7.2, 111.65],
+  [-7.3, 111.64],
+  [-7.4, 111.6],
+  [-7.5, 111.57],
+  [-7.55, 111.55],
+  [-7.58, 111.54],
+  [-7.597, 111.5335],
+];
+
+// ============= HELPERS =============
+function interpolate(
+  route: [number, number][],
+  progress: number
+): { lat: number; lng: number; segIdx: number } {
+  const total = route.length - 1;
+  const p = Math.min(progress, 0.9999);
+  const exact = p * total;
+  const idx = Math.min(Math.floor(exact), total - 1);
+  const frac = exact - idx;
+  const from = route[idx];
+  const to = route[Math.min(idx + 1, total)];
+  return {
+    lat: from[0] + (to[0] - from[0]) * frac,
+    lng: from[1] + (to[1] - from[1]) * frac,
+    segIdx: idx,
+  };
+}
+
+function buildDrawnRoute(route: [number, number][], progress: number): [number, number][] {
+  const total = route.length - 1;
+  const p = Math.min(progress, 0.9999);
+  const exact = p * total;
+  const idx = Math.min(Math.floor(exact), total - 1);
+  const frac = exact - idx;
+  const points: [number, number][] = route.slice(0, idx + 1);
+  if (idx < total) {
+    const from = route[idx];
+    const to = route[idx + 1];
+    points.push([from[0] + (to[0] - from[0]) * frac, from[1] + (to[1] - from[1]) * frac]);
+  }
+  return points;
+}
+
 export default function InteractiveMapSection() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "-80px" });
   const [showFamily, setShowFamily] = useState(false);
   const [L, setL] = useState<any>(null);
+  const [arrived, setArrived] = useState(false);
 
+  // Load Leaflet CDN
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
     document.head.appendChild(link);
-
     const script = document.createElement("script");
     script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     script.onload = () => setL(window.L);
     document.head.appendChild(script);
-
     return () => {
       document.head.removeChild(link);
       document.head.removeChild(script);
     };
   }, []);
 
-  // Inject CSS to remove Leaflet's default marker background
+  // Marker style override
   useEffect(() => {
     if (!L) return;
-    const style = document.createElement("style");
-    style.innerHTML = `
-      .leaflet-marker-icon {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-      }
-    `;
-    document.head.appendChild(style);
+    const s = document.createElement("style");
+    s.innerHTML = `.leaflet-marker-icon{background:transparent!important;border:none!important;box-shadow:none!important}`;
+    document.head.appendChild(s);
     return () => {
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
+      if (document.head.contains(s)) document.head.removeChild(s);
     };
   }, [L]);
 
+  // Map + animation
   useEffect(() => {
     if (!L || !mapRef.current || !isInView) return;
 
     const map = L.map(mapRef.current).setView([-7.6, 111.0], 9);
-
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    // Locations
-    const wonosari: [number, number] = [-8.0084, 110.6067]; // Wonosari, Gunungkidul (Herlambang)
-    const grogogan: [number, number] = [-7.2000, 111.6500]; // Grogogan, Madiun (Rela)
-    const kua: [number, number] = [-7.5970, 111.5335]; // KUA Jiwan
+    // ---- Icon factories ----
+    const pin = (emoji: string, label: string, c1: string, c2: string) =>
+      L.divIcon({
+        html: `<div style="text-align:center;background:transparent">
+          <div style="font-size:40px;filter:drop-shadow(0 3px 10px rgba(0,0,0,0.4))">${emoji}</div>
+          <div style="display:inline-block;background:linear-gradient(135deg,${c1},${c2});color:#fff;font-size:11px;font-weight:bold;padding:4px 12px;border-radius:15px;margin-top:4px;box-shadow:0 2px 8px rgba(0,0,0,0.2);white-space:nowrap">${label}</div>
+        </div>`,
+        iconSize: [85, 100],
+        iconAnchor: [42, 60],
+      });
 
-    // Calculate bearing (0° = north, clockwise)
-    const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-      const toRad = (deg: number) => (deg * Math.PI) / 180;
-      const toDeg = (rad: number) => (rad * 180) / Math.PI;
+    const kuaIcon = (scale = 1) =>
+      L.divIcon({
+        html: `<div style="text-align:center;background:transparent;transform:scale(${scale});transform-origin:bottom center">
+          <div style="font-size:40px;filter:drop-shadow(0 3px 10px rgba(0,0,0,0.4))">🕌</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#D8B48A,#C8A97E);color:#fff;font-size:10px;font-weight:600;padding:4px 14px;border-radius:20px;margin-top:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;letter-spacing:0.3px">
+            <span>❤️</span> KUA Jiwan
+          </div>
+        </div>`,
+        iconSize: [85 * scale, 95 * scale],
+        iconAnchor: [42 * scale, 60 * scale],
+      });
 
-      const φ1 = toRad(lat1);
-      const φ2 = toRad(lat2);
-      const Δλ = toRad(lng2 - lng1);
-
-      const y = Math.sin(Δλ) * Math.cos(φ2);
-      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-
-      const θ = Math.atan2(y, x);
-      return (toDeg(θ) + 360) % 360;
+    const nawasenaIcon = (scale = 1) => {
+      const s = scale;
+      return L.divIcon({
+        html: `<div style="text-align:center;background:transparent;transform:scale(${s});transform-origin:bottom center">
+          <div style="font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3))">🍽️</div>
+          <div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#D8B4A0,#C8A97E);color:#fff;font-size:9px;font-weight:600;padding:3px 10px;border-radius:14px;margin-top:4px;box-shadow:0 2px 6px rgba(0,0,0,0.12);white-space:nowrap;letter-spacing:0.3px">
+            Resto Nawasena
+          </div>
+          <div style="font-size:${Math.round(8 * s)}px;color:#5C4033;opacity:0.75;margin-top:${Math.round(14 * s)}px;white-space:nowrap;font-weight:500;letter-spacing:0.2px">
+            ─ Lokasi Makan Keluarga ─
+          </div>
+        </div>`,
+        iconSize: [120 * s, 110 * s],
+        iconAnchor: [60 * s, 110 * s],
+      });
     };
 
-    // Create car icon - 🚗 points RIGHT (east = 90°) by default
-    // To align with bearing: rotation = bearing - 90
-    const createCarIcon = (bearing: number, name: string) => {
-      const rotation = bearing - 90; // Adjust because 🚗 points right (90°)
+    // 🚘 always faces screen (no tilt)
+    const carIcon = (name: string, shadow = false) => {
+      if (shadow) {
+        return L.divIcon({
+          html: `<div style="font-size:26px;opacity:0.2;filter:blur(3px)">🚘</div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 25],
+        });
+      }
       return L.divIcon({
-        html: `<div style="text-align: center; background: transparent;">
-          <div style="font-size: 32px; transform: rotate(${rotation}deg); transform-origin: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">🚗</div>
-          <div style="display: inline-block; background: linear-gradient(135deg, #C8A96B, #D8B4A0); color: white; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; margin-top: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap;">${name}</div>
+        html: `<div style="text-align:center;background:transparent">
+          <div style="font-size:32px;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.35))">🚘</div>
+          <div style="display:inline-block;background:linear-gradient(135deg,#C8A96B,#D8B4A0);color:#fff;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-top:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap">${name}</div>
         </div>`,
         iconSize: [50, 65],
         iconAnchor: [25, 25],
       });
     };
 
-    // Beautified home icon for Herlambang & Rela (no white background)
-    const homeIcon = (emoji: string, label: string, color1: string, color2: string) => {
-      return L.divIcon({
-        html: `<div style="text-align: center; background: transparent;">
-          <div style="font-size: 40px; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.4));">${emoji}</div>
-          <div style="display: inline-block; background: linear-gradient(135deg, ${color1}, ${color2}); color: white; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 15px; margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); white-space: nowrap;">${label}</div>
-        </div>`,
-        iconSize: [75, 90],
-        iconAnchor: [37, 50],
-      });
-    };
-
-    // Wedding-themed icon for KUA Jiwan (using 💒 wedding rings)
-    const kuaIcon = L.divIcon({
-      html: `<div style="text-align: center; background: transparent;">
-        <div style="font-size: 44px; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.4));">💒</div>
-        <div style="display: inline-block; background: linear-gradient(135deg, #C8A96B, #D8B4A0); color: white; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 15px; margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); white-space: nowrap;">KUA Jiwan</div>
-      </div>`,
-      iconSize: [85, 100],
-      iconAnchor: [42, 60],
+    const trailHeart = L.divIcon({
+      html: `<div style="font-size:10px;opacity:0.7">❤️</div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
     });
 
-    // Add markers
-    L.marker(wonosari, { icon: homeIcon("🏠", "Herlambang", "#C8A96B", "#D8B4A0") })
-      .addTo(map)
-      .bindPopup("<b>Wonosari, Gunungkidul</b><br>Rumah Herlambang");
+    // ---- Static markers ----
+    L.marker(WONOSARI, { icon: pin("🏠", "Herlambang", "#C8A96B", "#D8B4A0") }).addTo(map);
+    L.marker(GROGOGAN, { icon: pin("🏡", "Rela", "#D8B4A0", "#C8A96B") }).addTo(map);
 
-    L.marker(grogogan, { icon: homeIcon("🏡", "Rela", "#D8B4A0", "#C8A96B") })
-      .addTo(map)
-      .bindPopup("<b>Grogogan, Madiun</b><br>Rumah Rela Hastuti");
+    const kuaMarker = L.marker(KUA, { icon: kuaIcon(1) }).addTo(map);
+    const nawasenaMarker = L.marker(NAWASENA, { icon: nawasenaIcon(1) }).addTo(map);
 
-    L.marker(kua, { icon: kuaIcon })
-      .addTo(map)
-      .bindPopup("<b>KUA Jiwan, Madiun</b><br>Lokasi Akad Nikah - 29 Mei 2026");
+    nawasenaMarker.bindPopup(`
+      <div style="text-align:center;padding:10px;font-family:sans-serif">
+        <div style="font-size:28px;margin-bottom:6px">🍽️</div>
+        <b style="font-size:15px;color:#333">Resto Nawasena Madiun</b>
+        <p style="font-size:13px;color:#666;margin:6px 0">Lokasi Makan Keluarga</p>
+        <a href="${config.locations.familyGathering.mapsUrl}" target="_blank" rel="noopener noreferrer"
+           style="display:inline-block;margin-top:6px;padding:8px 20px;background:linear-gradient(135deg,#C8A96B,#D8B4A0);color:#fff;border-radius:25px;text-decoration:none;font-size:13px;font-weight:bold">
+          📍 Buka Google Maps
+        </a>
+      </div>
+    `);
 
-    // Routes with thicker, more visible lines
-    const routeHerlambang: [number, number][] = [
-      [-8.0084, 110.6067], // Wonosari
-      [-8.0, 110.7],
-      [-7.9, 110.9],
-      [-7.8, 111.1],
-      [-7.7, 111.25],
-      [-7.65, 111.35],
-      [-7.62, 111.45],
-      [-7.60, 111.52],
-      [-7.5970, 111.5335], // KUA Jiwan
-    ];
-
-    const routeRela: [number, number][] = [
-      [-7.2000, 111.6500], // Grogogan, Madiun
-      [-7.3, 111.64],
-      [-7.4, 111.60],
-      [-7.5, 111.57],
-      [-7.55, 111.55],
-      [-7.58, 111.54],
-      [-7.5970, 111.5335], // KUA Jiwan
-    ];
-
-    // Draw routes - thicker and more visible
-    L.polyline(routeHerlambang, {
-      color: "#C8A96B",
-      weight: 5,
-      opacity: 0.8,
-      dashArray: "15, 10",
-    }).addTo(map);
-
-    L.polyline(routeRela, {
-      color: "#D8B4A0",
-      weight: 5,
-      opacity: 0.8,
-      dashArray: "15, 10",
-    }).addTo(map);
-
-    // Animated cars with correct initial rotation
-    const carHerlambang = L.marker(wonosari, {
-      icon: createCarIcon(
-        calculateBearing(wonosari[0], wonosari[1], routeHerlambang[1][0], routeHerlambang[1][1]),
-        "Herlambang"
-      ),
-    }).addTo(map);
-
-    const carRela = L.marker(grogogan, {
-      icon: createCarIcon(
-        calculateBearing(grogogan[0], grogogan[1], routeRela[1][0], routeRela[1][1]),
-        "Rela"
-      ),
-    }).addTo(map);
-
-    // Popups on cars (show names)
-    carHerlambang.bindPopup("<b>🚗 Herlambang</b><br>Dari Wonosari, Gunungkidul menuju KUA Jiwan");
-    carRela.bindPopup("<b>🚗 Rela</b><br>Dari Grogogan, Madiun menuju KUA Jiwan");
-
-    // Animation function
-    const animateCar = (
-      car: any,
-      route: [number, number][],
-      progress: number,
-      setProgress: (p: number) => void,
-      speed: number
-    ) => {
-      if (progress >= 1) {
-        setProgress(0);
-        car.setLatLng(route[0]);
-        return;
-      }
-
-      const totalSegments = route.length - 1;
-      const exactPosition = progress * totalSegments;
-      const segmentIndex = Math.floor(exactPosition);
-      const segmentProgress = exactPosition % 1;
-
-      const startIdx = Math.min(segmentIndex, totalSegments - 1);
-      const endIdx = Math.min(segmentIndex + 1, totalSegments);
-
-      const start = route[startIdx];
-      const end = route[endIdx];
-
-      const lat = start[0] + (end[0] - start[0]) * segmentProgress;
-      const lng = start[1] + (end[1] - start[1]) * segmentProgress;
-
-      // Calculate bearing for rotation (direction of travel)
-      const bearing = calculateBearing(start[0], start[1], end[0], end[1]);
-      
-      car.setLatLng([lat, lng]);
-      car.setIcon(createCarIcon(bearing, car === carHerlambang ? "Herlambang" : "Rela"));
-
-      setProgress(progress + speed);
+    // ---- Zoom handler: bigger when zoom in, smaller when zoom out ----
+    const updateZoom = () => {
+      const z = map.getZoom();
+      const s = z >= 13 ? 1.5 : z >= 12 ? 1.25 : z >= 11 ? 1.0 : z >= 10 ? 0.8 : 0.6;
+      kuaMarker.setIcon(kuaIcon(s));
+      nawasenaMarker.setIcon(nawasenaIcon(s));
     };
+    map.on("zoomend", updateZoom);
 
-    let progressH = 0;
-    let progressR = 0;
+    // ---- Route lines ----
+    const bgLineH = L.polyline(ROUTE_H, {
+      color: "#C8A96B", weight: 3, opacity: 0.15, dashArray: "8, 8",
+    }).addTo(map);
+    const bgLineR = L.polyline(ROUTE_R, {
+      color: "#D8B4A0", weight: 3, opacity: 0.15, dashArray: "8, 8",
+    }).addTo(map);
 
-    // SYNCHRONIZED ARRIVAL: Both cars reach KUA at the same time
-    // Herlambang: 8 segments, ~200km (FASTER)
-    // Rela: 6 segments, ~50km (SLOWER since closer)
-    const interval = setInterval(() => {
-      animateCar(carHerlambang, routeHerlambang, progressH, (p) => {
-        progressH = p;
-      }, 0.004); // Faster (longer distance)
+    const fgLineH = L.polyline([ROUTE_H[0]], {
+      color: "#C8A96B", weight: 5, opacity: 0.9,
+    }).addTo(map);
+    const fgLineR = L.polyline([ROUTE_R[0]], {
+      color: "#D8B4A0", weight: 5, opacity: 0.9,
+    }).addTo(map);
 
-      animateCar(carRela, routeRela, progressR, (p) => {
-        progressR = p;
-      }, 0.003); // Slower (shorter distance - arrives same time)
-    }, 50);
+    // ---- Cars ----
+    const shadowH = L.marker(WONOSARI, { icon: carIcon("", true) }).addTo(map);
+    const shadowR = L.marker(GROGOGAN, { icon: carIcon("", true) }).addTo(map);
+    const carH = L.marker(WONOSARI, { icon: carIcon("Herlambang") }).addTo(map);
+    const carR = L.marker(GROGOGAN, { icon: carIcon("Rela") }).addTo(map);
+
+    // ---- Animation loop ----
+    let pH = 0;
+    let pR = 0;
+    const SPEED = 0.0015;
+    let animInterval: any;
+    let restartTO: any;
+
+    const trailHearts: any[] = [];
+
+    function dropTrail(lat: number, lng: number) {
+      const h = L.marker([lat, lng], { icon: trailHeart }).addTo(map);
+      trailHearts.push(h);
+      setTimeout(() => {
+        map.removeLayer(h);
+        const idx = trailHearts.indexOf(h);
+        if (idx >= 0) trailHearts.splice(idx, 1);
+      }, 1500);
+    }
+
+    function resetCars() {
+      pH = 0;
+      pR = 0;
+      carH.setLatLng(WONOSARI);
+      carH.setIcon(carIcon("Herlambang"));
+      shadowH.setLatLng(WONOSARI);
+      shadowH.setIcon(carIcon("", true));
+      carR.setLatLng(GROGOGAN);
+      carR.setIcon(carIcon("Rela"));
+      shadowR.setLatLng(GROGOGAN);
+      shadowR.setIcon(carIcon("", true));
+      fgLineH.setLatLngs([ROUTE_H[0]]);
+      fgLineR.setLatLngs([ROUTE_R[0]]);
+      trailHearts.forEach((h) => map.removeLayer(h));
+      trailHearts.length = 0;
+    }
+
+    let frame = 0;
+
+    function tick() {
+      if (pH >= 1 && pR >= 1) return;
+
+      pH = Math.min(pH + SPEED, 1);
+      pR = Math.min(pR + SPEED, 1);
+
+      const posH = interpolate(ROUTE_H, pH);
+      fgLineH.setLatLngs(buildDrawnRoute(ROUTE_H, pH));
+      carH.setLatLng([posH.lat, posH.lng]);
+      shadowH.setLatLng([posH.lat, posH.lng]);
+
+      const posR = interpolate(ROUTE_R, pR);
+      fgLineR.setLatLngs(buildDrawnRoute(ROUTE_R, pR));
+      carR.setLatLng([posR.lat, posR.lng]);
+      shadowR.setLatLng([posR.lat, posR.lng]);
+
+      frame++;
+      if (frame % 4 === 0) dropTrail(posH.lat, posH.lng);
+      if (frame % 6 === 0) dropTrail(posR.lat, posR.lng);
+
+      if (pH >= 1 && pR >= 1) {
+        clearInterval(animInterval);
+        setArrived(true);
+        restartTO = setTimeout(() => {
+          resetCars();
+          setArrived(false);
+          animInterval = setInterval(tick, 50);
+        }, 3000);
+      }
+    }
+
+    animInterval = setInterval(tick, 50);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(animInterval);
+      clearTimeout(restartTO);
       map.remove();
     };
   }, [L, isInView]);
 
   return (
-    <section ref={ref} className="relative py-24" style={{ backgroundColor: "var(--bg)" }}>
+    <section ref={sectionRef} className="relative py-24" style={{ backgroundColor: "var(--bg)" }}>
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
           className="mb-16 text-center"
@@ -258,62 +319,134 @@ export default function InteractiveMapSection() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
+          <p
+            className="font-[family-name:var(--font-cormorant)] text-sm tracking-[0.4em] uppercase"
+            style={{ color: "var(--secondary)" }}
+          >
+            Wedding Journey
+          </p>
+          <div className="ornament-divider mt-4 mb-6">
+            <span className="text-xs" style={{ color: "var(--primary)" }}>✦</span>
+          </div>
           <h2
-            className="font-[family-name:var(--font-playfair)] text-4xl font-bold sm:text-5xl"
+            className="font-[family-name:var(--font-playfair)] text-3xl font-bold italic leading-tight sm:text-4xl"
             style={{ color: "var(--text)" }}
           >
-            🗺️ Peta Lokasi
+            🗺️ Perjalanan Menuju<br />Hari Bahagia
           </h2>
-          <div className="ornament-divider mt-6">
-            <span style={{ color: "var(--primary)" }}>❋</span>
-          </div>
           <p
-            className="font-[family-name:var(--font-poppins)] mt-4 text-sm"
-            style={{ color: "var(--text-light)" }}
+            className="font-[family-name:var(--font-cormorant)] mt-5 text-xs tracking-[0.3em] uppercase"
+            style={{ color: "var(--text-light)", opacity: 0.65 }}
           >
-            Perjalanan menuju hari bahagia kami
+            Dari dua kota, satu cinta menuju pelaminan
           </p>
         </motion.div>
 
-        {/* Leaflet Map */}
-        <motion.div
-          ref={mapRef}
-          className="mb-12 overflow-hidden rounded-2xl"
-          style={{
-            height: "500px",
-            backgroundColor: "var(--bg-alt)",
-            border: "1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)",
-          }}
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 1, delay: 0.3 }}
-        />
+        {/* Map */}
+        <div className="relative mb-12">
+          <motion.div
+            ref={mapRef}
+            className="overflow-hidden rounded-2xl"
+            style={{
+              height: "500px",
+              backgroundColor: "var(--bg-alt)",
+              border: "1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)",
+            }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 1, delay: 0.3 }}
+          />
 
-        {/* Location Cards */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-3">
+          {/* Arrival overlay */}
+          {arrived && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1000]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              style={{ backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+            >
+              <div
+                className="rounded-xl px-8 py-5 text-center shadow-lg"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.4)",
+                  border: "1px solid rgba(200,169,107,0.3)",
+                }}
+              >
+                <div
+                  className="font-[family-name:var(--font-playfair)] text-2xl font-bold sm:text-3xl"
+                  style={{ color: "var(--primary)" }}
+                >
+                  29 Mei 2026
+                </div>
+                <p
+                  className="font-[family-name:var(--font-lora)] mt-1 text-xs"
+                  style={{ color: "var(--text)", opacity: 0.6 }}
+                >
+                  — sampai jumpa di hari bahagia —
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Mini Wedding Journey Timeline */}
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <div className="mx-auto flex max-w-2xl items-center justify-center gap-0">
+            {[
+              { icon: "🏠", label: "Berangkat", color: "#C8A96B" },
+              { icon: "🚘", label: "Perjalanan", color: "#D8B4A0" },
+              { icon: "🕌", label: "Akad Nikah", color: "#C8A96B" },
+              { icon: "🍽️", label: "Makan Keluarga", color: "#D8B4A0" },
+            ].map((step, i, arr) => (
+              <div key={i} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${step.color} 20%, transparent)`,
+                      border: `2px solid ${step.color}`,
+                    }}
+                  >
+                    {step.icon}
+                  </div>
+                  <span
+                    className="mt-1.5 whitespace-nowrap text-[10px] font-medium tracking-wide"
+                    style={{ color: "var(--text-light)" }}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div
+                    className="mx-2 mt-[-1.2rem] h-px w-12 sm:w-20"
+                    style={{
+                      background: `linear-gradient(to right, ${step.color}, ${arr[i + 1].color})`,
+                      opacity: 0.4,
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Location cards */}
+        <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            {
-              emoji: "🏠",
-              title: "Wonosari, Gunungkidul",
-              subtitle: "Rumah Herlambang",
-              color: "#C8A96B",
-            },
-            {
-              emoji: "🏡",
-              title: "Grogogan, Madiun",
-              subtitle: "Rumah Rela Hastuti",
-              color: "#D8B4A0",
-            },
-            {
-              emoji: "💒",
-              title: "KUA Jiwan, Madiun",
-              subtitle: "Lokasi Akad Nikah",
-              color: "#C8A96B",
-            },
-          ].map((loc, index) => (
+            { emoji: "🏠", title: "Wonosari, Gunungkidul", subtitle: "Rumah Herlambang", color: "#C8A96B", href: "https://www.google.com/maps?q=Wonosari+Gunungkidul" },
+            { emoji: "🏡", title: "Grogogan, Madiun", subtitle: "Rumah Rela Hastuti", color: "#D8B4A0", href: "https://www.google.com/maps?q=Grogogan+Madiun" },
+            { emoji: "🕌", title: "KUA Jiwan, Madiun", subtitle: "Lokasi Akad Nikah", color: "#C8A96B", href: config.akad.mapsUrl },
+            { emoji: "🍽️", title: "Resto Nawasena Madiun", subtitle: "Lokasi Makan Keluarga", color: "#D8B4A0", href: config.locations.familyGathering.mapsUrl },
+          ].map((loc, i) => (
             <motion.a
-              key={index}
-              href={config.akad.mapsUrl}
+              key={i}
+              href={loc.href}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-xl p-6 text-center transition-all hover:scale-105"
@@ -323,7 +456,7 @@ export default function InteractiveMapSection() {
               }}
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
+              transition={{ duration: 0.6, delay: i * 0.15 }}
             >
               <div className="mb-3 text-3xl">{loc.emoji}</div>
               <h3
@@ -352,13 +485,10 @@ export default function InteractiveMapSection() {
           <button
             onClick={() => setShowFamily(!showFamily)}
             className="inline-flex items-center gap-2 rounded-full px-8 py-3 font-[family-name:var(--font-poppins)] text-sm font-medium transition-all hover:opacity-80"
-            style={{
-              backgroundColor: "var(--primary)",
-              color: "#FFFFFF",
-            }}
+            style={{ backgroundColor: "var(--primary)", color: "#FFFFFF" }}
           >
             <Utensils className="h-4 w-4" />
-            Lokasi Pertemuan Keluarga - Resto Nawasena
+            Lokasi Makan Keluarga - Resto Nawasena
           </button>
 
           {showFamily && (

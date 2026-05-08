@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#FFFFFF"/>
+  <rect x="50" y="50" width="200" height="200" fill="#F7F1E8" stroke="#C8A96B" stroke-width="2"/>
+  <text x="150" y="140" font-family="Poppins, sans-serif" font-size="16" fill="#C8A96B" text-anchor="middle">QRIS</text>
+  <text x="150" y="170" font-family="Poppins, sans-serif" font-size="12" fill="#666" text-anchor="middle">(Upload QRIS here)</text>
+</svg>

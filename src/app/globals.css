@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root {
+  /* Default fallback — overridden by ThemeProvider */
+  --primary: #B8860B;
+  --primary-light: #D4A843;
+  --primary-dark: #8B6914;
+  --secondary: #7C8C6E;
+  --secondary-light: #9AAB8C;
+  --bg: #FEFCF6;
+  --bg-alt: #FAF3E0;
+  --bg-dark: #F0E6CC;
+  --text: #2C2C2C;
+  --text-light: #666666;
+  --cover-bg: #0a0a0a;
+  --cover-bg-mid: #1a1a1a;
+  --cover-text: #FFFFFF;
+  --particle: #D4A843;
+
+  /* Font families */
+  --font-playfair: var(--font-playfair);
+  --font-poppins: var(--font-poppins);
+}
+
+body {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-playfair), serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-alt);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-light);
+  border-radius: 3px;
+}
+
+/* Ornament divider */
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ornament-divider::before,
+.ornament-divider::after {
+  content: "";
+  height: 1px;
+  width: 60px;
+  background: linear-gradient(
+    to var(--direction, right),
+    var(--primary-light),
+    transparent
+  );
+}
+
+.ornament-divider::before {
+  --direction: right;
+}
+
+.ornament-divider::after {
+  --direction: left;
+}
+
+/* Floating particles */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: fixed;
+  pointer-events: none;
+  animation: float linear infinite;
+}
+
+/* Countdown glow */
+.countdown-box {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    color-mix(in srgb, var(--primary) 15%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* Gallery hover */
+.gallery-item {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gallery-item:hover {
+  transform: scale(1.05);
+}
+
+/* Music button pulse */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.music-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-light);
+  animation: pulse-ring 2s ease-out infinite;
+}

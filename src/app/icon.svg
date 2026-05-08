@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4A843"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="url(#gold)" stroke-width="1.5"/>
+  <text x="7.5" y="22" font-family="Georgia,'Times New Roman',serif" font-weight="bold" font-size="16" fill="url(#gold)" text-anchor="middle">H</text>
+  <text x="16.5" y="22" font-family="Georgia,'Times New Roman',serif" font-size="10" fill="#D4A843" text-anchor="middle">♥</text>
+  <text x="24.5" y="22" font-family="Georgia,'Times New Roman',serif" font-weight="bold" font-size="16" fill="url(#gold)" text-anchor="middle">R</text>
+</svg>

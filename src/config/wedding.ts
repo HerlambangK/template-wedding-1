@@ -216,7 +216,7 @@ export const config = {
 		endTime: '10:00',
 		venue: 'KUA Jiwan, Madiun',
 		address: 'Jl. Raya Jiwan, Jiwan, Kec. Jiwan, Kabupaten Madiun, Jawa Timur',
-		mapsUrl: 'https://goo.gl/maps/kua-jiwan-madiun',
+		mapsUrl: 'https://www.google.com/maps?q=KUA+Jiwan+Madiun',
 		mapsEmbed:
 			'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.0!2d111.5!3d-7.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1',
 		showTime: false,

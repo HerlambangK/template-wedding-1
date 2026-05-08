@@ -27,11 +27,11 @@ function PersonCard({ person, index }: { person: PersonInfo; index: number }) {
       transition={{ duration: 0.8, delay: index * 0.3 }}
     >
       <motion.div
-        className="relative mb-8"
+        className="relative mb-6 sm:mb-8"
         whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 300 }}
       >
-        <div className="relative h-52 w-52 sm:h-56 sm:w-56">
+        <div className="relative h-32 w-32 max-w-full sm:h-48 sm:w-48 md:h-56 md:w-56">
           <motion.div
             className="absolute inset-0 rounded-full"
             style={{
@@ -51,7 +51,7 @@ function PersonCard({ person, index }: { person: PersonInfo; index: number }) {
             }}
           >
             <span
-              className="font-[family-name:var(--font-playfair)] text-5xl font-bold"
+              className="font-[family-name:var(--font-playfair)] text-3xl font-bold sm:text-5xl"
               style={{ color: "var(--primary)", opacity: 0.8 }}
             >
               {person.name.charAt(0).toUpperCase()}
@@ -61,7 +61,7 @@ function PersonCard({ person, index }: { person: PersonInfo; index: number }) {
       </motion.div>
 
       <motion.h3
-        className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl italic"
+        className="font-[family-name:var(--font-playfair)] text-xl sm:text-3xl md:text-4xl italic"
         style={{ color: "var(--text)" }}
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : {}}
@@ -70,7 +70,7 @@ function PersonCard({ person, index }: { person: PersonInfo; index: number }) {
         {person.fullName}
       </motion.h3>
 
-      {(person.childOrder || person.father || person.mother) && (
+      {(person.father || person.mother) && (
         <motion.div
           className="mt-4 space-y-1"
           initial={{ opacity: 0 }}
@@ -146,7 +146,7 @@ export default function CoupleSection({
           </div>
         </motion.div>
 
-        <div className="grid gap-16 sm:gap-8 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-6 sm:gap-8">
           <PersonCard person={groom} index={0} />
           <PersonCard person={bride} index={1} />
         </div>

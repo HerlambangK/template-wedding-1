@@ -134,7 +134,7 @@ export default function EventSection({
           </div>
         </motion.div>
 
-        <div className="grid gap-8 sm:grid-cols-1 max-w-md mx-auto">
+        <div className="grid gap-8 md:grid-cols-2 max-w-md md:max-w-2xl mx-auto">
           <EventCard title="Akad Nikah" event={akad} index={0} />
           {makanKeluarga && (
             <EventCard title="Makan Keluarga" event={makanKeluarga} index={1} />

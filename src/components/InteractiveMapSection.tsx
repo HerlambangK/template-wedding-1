@@ -141,23 +141,6 @@ export default function InteractiveMapSection() {
         iconAnchor: [42 * scale, 60 * scale],
       });
 
-    const nawasenaIcon = (scale = 1) => {
-      const s = scale;
-      return L.divIcon({
-        html: `<div style="text-align:center;background:transparent;transform:scale(${s});transform-origin:bottom center">
-          <div style="font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3))">🍽️</div>
-          <div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#D8B4A0,#C8A97E);color:#fff;font-size:9px;font-weight:600;padding:3px 10px;border-radius:14px;margin-top:4px;box-shadow:0 2px 6px rgba(0,0,0,0.12);white-space:nowrap;letter-spacing:0.3px">
-            Resto Nawasena
-          </div>
-          <div style="font-size:${Math.round(8 * s)}px;color:#5C4033;opacity:0.75;margin-top:${Math.round(14 * s)}px;white-space:nowrap;font-weight:500;letter-spacing:0.2px">
-            ─ Lokasi Makan Keluarga ─
-          </div>
-        </div>`,
-        iconSize: [120 * s, 110 * s],
-        iconAnchor: [60 * s, 110 * s],
-      });
-    };
-
     // 🚘 always faces screen (no tilt)
     const carIcon = (name: string, shadow = false) => {
       if (shadow) {
@@ -188,26 +171,12 @@ export default function InteractiveMapSection() {
     L.marker(GROGOGAN, { icon: pin("🏡", "Rela", "#D8B4A0", "#C8A96B") }).addTo(map);
 
     const kuaMarker = L.marker(KUA, { icon: kuaIcon(1) }).addTo(map);
-    const nawasenaMarker = L.marker(NAWASENA, { icon: nawasenaIcon(1) }).addTo(map);
-
-    nawasenaMarker.bindPopup(`
-      <div style="text-align:center;padding:10px;font-family:sans-serif">
-        <div style="font-size:28px;margin-bottom:6px">🍽️</div>
-        <b style="font-size:15px;color:#333">Resto Nawasena Madiun</b>
-        <p style="font-size:13px;color:#666;margin:6px 0">Lokasi Makan Keluarga</p>
-        <a href="${config.locations.familyGathering.mapsUrl}" target="_blank" rel="noopener noreferrer"
-           style="display:inline-block;margin-top:6px;padding:8px 20px;background:linear-gradient(135deg,#C8A96B,#D8B4A0);color:#fff;border-radius:25px;text-decoration:none;font-size:13px;font-weight:bold">
-          📍 Buka Google Maps
-        </a>
-      </div>
-    `);
 
     // ---- Zoom handler: bigger when zoom in, smaller when zoom out ----
     const updateZoom = () => {
       const z = map.getZoom();
       const s = z >= 13 ? 1.5 : z >= 12 ? 1.25 : z >= 11 ? 1.0 : z >= 10 ? 0.8 : 0.6;
       kuaMarker.setIcon(kuaIcon(s));
-      nawasenaMarker.setIcon(nawasenaIcon(s));
     };
     map.on("zoomend", updateZoom);
 
@@ -346,9 +315,8 @@ export default function InteractiveMapSection() {
         <div className="relative mb-12">
           <motion.div
             ref={mapRef}
-            className="overflow-hidden rounded-2xl"
+            className="overflow-hidden rounded-2xl h-[350px] md:h-[500px]"
             style={{
-              height: "500px",
               backgroundColor: "var(--bg-alt)",
               border: "1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)",
             }}
@@ -388,6 +356,53 @@ export default function InteractiveMapSection() {
               </div>
             </motion.div>
           )}
+
+          {/* Resto Nawasena info card */}
+          <div className="absolute bottom-2 left-2 right-2 md:bottom-4 md:left-4 md:right-4 z-[1001]">
+            <motion.div
+              className="rounded-lg md:rounded-xl p-2 md:p-4 shadow-lg"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(200,169,107,0.3)",
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex h-7 w-7 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "var(--primary-light)" }}>
+                  <span className="text-sm md:text-lg">🍽️</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-[family-name:var(--font-playfair)] text-xs font-bold md:text-base" style={{ color: "var(--text)" }}>
+                    Resto Nawasena
+                  </p>
+                  <p className="hidden md:block font-[family-name:var(--font-cormorant)] text-xs tracking-wider uppercase" style={{ color: "var(--text-light)" }}>
+                    Lokasi Makan Keluarga
+                  </p>
+                </div>
+                <a
+                  href={config.locations.familyGathering.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold md:px-4 md:py-2 md:text-sm md:gap-1.5"
+                  style={{
+                    background: "linear-gradient(135deg, #C8A96B, #D8B4A0)",
+                    color: "#fff",
+                  }}
+                >
+                  <span>📍</span>
+                  <span className="hidden md:inline">Buka Maps</span>
+                  <span className="md:hidden">Maps</span>
+                </a>
+              </div>
+              <p className="hidden md:block font-[family-name:var(--font-lora)] mt-2 text-xs italic leading-relaxed" style={{ color: "var(--text-light)", opacity: 0.7 }}>
+                Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun
+              </p>
+            </motion.div>
+          </div>
         </div>
 
         {/* Mini Wedding Journey Timeline */}
@@ -424,7 +439,7 @@ export default function InteractiveMapSection() {
                 </div>
                 {i < arr.length - 1 && (
                   <div
-                    className="mx-2 mt-[-1.2rem] h-px w-12 sm:w-20"
+                    className="mx-1 sm:mx-2 mt-[-1.2rem] h-px w-6 sm:w-12 lg:w-20"
                     style={{
                       background: `linear-gradient(to right, ${step.color}, ${arr[i + 1].color})`,
                       opacity: 0.4,
@@ -449,7 +464,7 @@ export default function InteractiveMapSection() {
               href={loc.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl p-6 text-center transition-all hover:scale-105"
+              className="rounded-xl p-4 md:p-6 text-center transition-all hover:scale-105"
               style={{
                 backgroundColor: "var(--bg-alt)",
                 border: `1px solid color-mix(in srgb, ${loc.color} 30%, transparent)`,
@@ -496,6 +511,7 @@ export default function InteractiveMapSection() {
               className="mt-6 overflow-hidden rounded-2xl"
               style={{
                 border: "1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)",
+                minHeight: "250px",
                 height: "400px",
               }}
               initial={{ height: 0, opacity: 0 }}

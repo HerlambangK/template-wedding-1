@@ -339,4 +339,4 @@ MIT — free untuk dipakai, dimodifikasi, dan didistribusikan.
 
 ---
 
-Made with ❤️ by [gorillaworkout](https://github.com/gorillaworkout)
+Made with ❤️ 

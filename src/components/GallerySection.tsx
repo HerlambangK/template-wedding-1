@@ -89,7 +89,7 @@ export default function GallerySection({ images }: { images: GalleryImage[] }) {
               exit={{ scale: 0.8, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-96 h-96 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, var(--bg-alt), var(--bg-dark))` }}>
+              <div className="w-72 sm:w-80 md:w-96 aspect-square rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, var(--bg-alt), var(--bg-dark))` }}>
                 <p className="font-[family-name:var(--font-cormorant)] text-lg" style={{ color: "var(--primary-light)" }}>
                   {images[lightboxIndex].alt}
                 </p>

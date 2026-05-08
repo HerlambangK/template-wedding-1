@@ -26,7 +26,7 @@ function CountdownBox({ value, label, index }: { value: number; label: string; i
   return (
     <motion.div
       ref={ref}
-      className="countdown-box rounded-2xl px-5 py-6 text-center min-w-[75px] sm:min-w-[90px]"
+      className="countdown-box rounded-2xl px-3 sm:px-5 py-4 sm:py-6 text-center min-w-[65px] sm:min-w-[75px] md:min-w-[90px]"
       initial={{ opacity: 0, y: 30, rotateX: 45 }}
       animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -68,7 +68,7 @@ export default function CountdownSection({ date }: { date: string }) {
             <span className="text-xs" style={{ color: "var(--primary)" }}>✦</span>
           </div>
 
-          <div className="flex justify-center gap-3 sm:gap-5">
+          <div className="flex justify-center gap-2 sm:gap-5">
             <CountdownBox value={time.days} label="Hari" index={0} />
             <CountdownBox value={time.hours} label="Jam" index={1} />
             <CountdownBox value={time.minutes} label="Menit" index={2} />

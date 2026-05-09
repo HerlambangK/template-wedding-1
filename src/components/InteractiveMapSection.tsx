@@ -140,7 +140,7 @@ export default function InteractiveMapSection() {
 				html: `<div style="text-align:center;background:transparent;transform:scale(${scale});transform-origin:bottom center">
           <div style="font-size:40px;filter:drop-shadow(0 3px 10px rgba(0,0,0,0.4))">🕌</div>
           <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#D8B48A,#C8A97E);color:#fff;font-size:10px;font-weight:600;padding:4px 14px;border-radius:20px;margin-top:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;letter-spacing:0.3px">
-            <span>❤️</span> Tempat Menikah
+            <span>❤️</span>Menikah
           </div>
         </div>`,
 				iconSize: [85 * scale, 95 * scale],
@@ -174,10 +174,10 @@ export default function InteractiveMapSection() {
 
 		// ---- Static markers ----
 		L.marker(WONOSARI, {
-			icon: pin('🏠', 'Wonosari', '#C8A96B', '#D8B4A0'),
+			icon: pin('🏠', 'Yogyakarta', '#C8A96B', '#D8B4A0'),
 		}).addTo(map);
 		L.marker(GROBOGAN, {
-			icon: pin('🏡', 'Madiun Jiwan', '#D8B4A0', '#C8A96B'),
+			icon: pin('🏡', 'Madiun', '#D8B4A0', '#C8A96B'),
 		}).addTo(map);
 
 		const kuaMarker = L.marker(KUA, { icon: kuaIcon(1) }).addTo(map);
@@ -223,9 +223,9 @@ export default function InteractiveMapSection() {
 		const shadowGrobogan = L.marker(GROBOGAN, {
 			icon: carIcon('', true),
 		}).addTo(map);
-		const carWonosari = L.marker(WONOSARI, { icon: carIcon('Herlambang') }).addTo(
-			map,
-		);
+		const carWonosari = L.marker(WONOSARI, {
+			icon: carIcon('Herlambang'),
+		}).addTo(map);
 		const carGrobogan = L.marker(GROBOGAN, { icon: carIcon('Rela') }).addTo(
 			map,
 		);

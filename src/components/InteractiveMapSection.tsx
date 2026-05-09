@@ -298,14 +298,14 @@ export default function InteractiveMapSection() {
             <span className="text-xs" style={{ color: "var(--primary)" }}>✦</span>
           </div>
           <h2
-            className="font-[family-name:var(--font-playfair)] text-3xl font-bold italic leading-tight sm:text-4xl"
+            className="font-[family-name:var(--font-playfair)] text-3xl font-light leading-tight sm:text-4xl"
             style={{ color: "var(--text)" }}
           >
-            🗺️ Perjalanan Menuju<br />Hari Bahagia
+            Perjalanan Menuju<br />Hari Bahagia
           </h2>
           <p
-            className="font-[family-name:var(--font-cormorant)] mt-5 text-xs tracking-[0.3em] uppercase"
-            style={{ color: "var(--text-light)", opacity: 0.65 }}
+            className="font-[family-name:var(--font-cormorant)] mt-5 text-sm tracking-[0.3em] uppercase"
+            style={{ color: "var(--text-light)" }}
           >
             Dari dua kota, satu cinta menuju pelaminan
           </p>

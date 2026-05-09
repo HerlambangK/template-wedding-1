@@ -17,9 +17,11 @@
   --cover-text: #FFFFFF;
   --particle: #D4A843;
 
-  /* Font families */
-  --font-playfair: var(--font-playfair);
+  /* Font families - all sans-serif */
+  --font-playfair: var(--font-poppins);
   --font-poppins: var(--font-poppins);
+  --font-cormorant: var(--font-poppins);
+  --font-lora: var(--font-poppins);
 }
 
 body {
@@ -27,7 +29,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-playfair), serif;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 html {

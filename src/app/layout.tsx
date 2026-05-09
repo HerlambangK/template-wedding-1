@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Poppins } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -28,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body
-        className={`${playfair.variable} ${poppins.variable} antialiased`}
+        className={`${poppins.variable} antialiased`}
       >
         {children}
       </body>

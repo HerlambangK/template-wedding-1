@@ -13,6 +13,7 @@ interface GiftInfo {
   label?: string;
   address?: string;
   phone?: string;
+  qrisImage?: string;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -34,9 +35,25 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function isValidGift(gift: GiftInfo): boolean {
+  if (gift.type === "bank") {
+    return !!(gift.accountNumber && gift.accountNumber.trim() && !gift.accountNumber.includes("(Isi"));
+  }
+  if (gift.type === "qris") {
+    return !!(gift.qrisImage && gift.qrisImage.trim());
+  }
+  if (gift.type === "gift") {
+    return !!(gift.phone && gift.phone.trim() && !gift.phone.includes("(Isi"));
+  }
+  return false;
+}
+
 export default function GiftSection({ gifts }: { gifts: GiftInfo[] }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
+
+  const validGifts = gifts.filter(isValidGift);
+  if (validGifts.length === 0) return null;
 
   return (
     <section ref={ref} className="relative py-24" style={{ backgroundColor: "var(--bg-alt)" }}>
@@ -55,7 +72,7 @@ export default function GiftSection({ gifts }: { gifts: GiftInfo[] }) {
         </motion.div>
 
         <div className="space-y-4">
-          {gifts.map((gift, index) => (
+          {validGifts.map((gift, index) => (
             <motion.div
               key={index}
               className="rounded-xl bg-white p-6"
@@ -73,6 +90,14 @@ export default function GiftSection({ gifts }: { gifts: GiftInfo[] }) {
                     <p className="font-[family-name:var(--font-lora)] mt-0.5 text-sm" style={{ color: "var(--text)", opacity: 0.7 }}>a.n. {gift.accountHolder}</p>
                     <div className="mt-3"><CopyButton text={gift.accountNumber!} /></div>
                   </div>
+                </div>
+              ) : gift.type === "qris" ? (
+                <div className="flex flex-col items-center text-center gap-3">
+                  <Gift className="h-5 w-5" style={{ color: "var(--primary)" }} />
+                  <p className="font-[family-name:var(--font-lora)] text-sm font-semibold" style={{ color: "var(--text)" }}>{gift.label}</p>
+                  {gift.qrisImage && (
+                    <img src={gift.qrisImage} alt="QRIS" className="w-40 h-40 object-contain rounded-lg" />
+                  )}
                 </div>
               ) : (
                 <div className="flex items-start gap-4">

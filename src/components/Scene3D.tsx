@@ -133,6 +133,27 @@ function GoldParticles() {
   );
 }
 
+const heartsConfig = Array.from({ length: 8 }, () => ({
+  position: [
+    (Math.random() - 0.5) * 7,
+    (Math.random() - 0.5) * 5,
+    -1 - Math.random() * 1.5,
+  ] as [number, number, number],
+  scale: 0.5 + Math.random() * 0.9,
+}));
+
+function FloatingHearts() {
+  const config = useMemo(() => heartsConfig, []);
+  return (
+    <>
+      {config.map((h, i) => (
+        <FloatingHeart key={i} position={h.position} scale={h.scale} />
+      ))}
+      <GoldParticles />
+    </>
+  );
+}
+
 export default function Scene3D({ variant = "cover" }: { variant?: "cover" | "hero" | "floating" }) {
   return (
     <div className="absolute inset-0 z-0">
@@ -166,12 +187,7 @@ export default function Scene3D({ variant = "cover" }: { variant?: "cover" | "he
         )}
 
         {variant === "floating" && (
-          <>
-            <GoldSphere position={[-3, 0, -1]} />
-            <GoldSphere position={[3, 1, -2]} />
-            <FloatingHeart position={[0, -1, -1]} scale={0.6} />
-            <GoldParticles />
-          </>
+          <FloatingHearts />
         )}
       </Canvas>
     </div>

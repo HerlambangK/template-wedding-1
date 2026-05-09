@@ -233,26 +233,26 @@ export const config = {
 	// 📍 Lokasi Penting
 	locations: {
 		groomHome: {
-			name: 'Rumah Herlambang',
+			name: 'Wonosari, Gunungkidul',
 			address: 'Wonosari, Gunungkidul, Yogyakarta',
 			lat: -8.0084,
 			lng: 110.6067,
 		},
 		brideHome: {
-			name: 'Rumah Rela Hastuti',
+			name: 'Grobogan, Madiun',
 			address: 'Grobogan, Madiun, Jawa Timur',
-			lat: -7.2,
+			lat: -7.55,
 			lng: 111.65,
 		},
 		kua: {
-			name: 'KUA Jiwan, Madiun',
+			name: 'Tempat Menikah - KUA Jiwan',
 			address: 'Jl. Raya Jiwan, Jiwan, Kabupaten Madiun, Jawa Timur',
 			lat: -7.5957,
 			lng: 111.5333,
 		},
 		familyGathering: {
-			name: 'Resto Nawasena Madiun',
-			address: 'Nawasena, Madiun, Jawa Timur',
+			name: 'RM Nawasena Madiun',
+			address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun',
 			mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 		},
 	},
@@ -300,7 +300,8 @@ export const config = {
 		{
 			type: 'qris',
 			label: 'QRIS',
-			qrisImage: '/images/qris.jpg',
+			// qrisImage: '/images/qris.jpg',
+			qrisImage: '',
 		},
 	],
 

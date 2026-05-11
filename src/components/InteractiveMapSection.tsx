@@ -355,8 +355,8 @@ export default function InteractiveMapSection() {
 						className='overflow-hidden rounded-2xl h-[350px] md:h-[500px]'
 						style={{
 							backgroundColor: 'var(--bg-alt)',
-							border:
-								'1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)',
+							border: '1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)',
+							zIndex: 1,
 						}}
 						initial={{ opacity: 0, y: 50 }}
 						animate={isInView ? { opacity: 1, y: 0 } : {}}

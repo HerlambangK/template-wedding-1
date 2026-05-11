@@ -150,9 +150,9 @@ export default function PublicInvitation({ invitation, messages }: Props) {
 
           <CoupleSection groom={data.groom} bride={data.bride} />
 
-          <EventSection akad={data.akad} resepsi={data.resepsi} />
+          <EventSection makanKeluarga={data.resepsi} />
 
-          {data.features.countdown && <CountdownSection date={data.akad.date} />}
+          {data.features.countdown && <CountdownSection date={data.resepsi.date} />}
 
           {data.features.gallery && data.gallery.length > 0 && (
             <GallerySection images={data.gallery} />

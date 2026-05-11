@@ -210,49 +210,20 @@ export const config = {
 	},
 
 	// 📅 Tanggal & Acara
-	akad: {
-		date: '2026-05-29',
-		time: '09:00',
-		endTime: '10:00',
-		venue: 'KUA Jiwan, Madiun',
-		address: 'Jl. Raya Jiwan, Jiwan, Kec. Jiwan, Kabupaten Madiun, Jawa Timur',
-		mapsUrl: 'https://www.google.com/maps?q=KUA+Jiwan+Madiun',
-		mapsEmbed:
-			'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.0!2d111.5!3d-7.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1',
-		showTime: false,
-	},
-
 	makanKeluarga: {
 		date: '2026-05-29',
 		time: '09:30',
-		venue: 'Resto Nawasena Madiun',
-		address: 'Nawasena, Madiun, Jawa Timur',
+		endTime: '10:30',
+		venue: 'NAWASENA GARDEN BALLROOM',
+		address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
 		mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 	},
 
 	// 📍 Lokasi Penting
 	locations: {
-		groomHome: {
-			name: 'Wonosari, Gunungkidul',
-			address: 'Wonosari, Gunungkidul, Yogyakarta',
-			lat: -8.0084,
-			lng: 110.6067,
-		},
-		brideHome: {
-			name: 'Grobogan, Madiun',
-			address: 'Grobogan, Madiun, Jawa Timur',
-			lat: -7.55,
-			lng: 111.65,
-		},
-		kua: {
-			name: 'Tempat Menikah - KUA Jiwan',
-			address: 'Jl. Raya Jiwan, Jiwan, Kabupaten Madiun, Jawa Timur',
-			lat: -7.5957,
-			lng: 111.5333,
-		},
 		familyGathering: {
-			name: 'RM Nawasena Madiun',
-			address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun',
+			name: 'NAWASENA GARDEN BALLROOM',
+			address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
 			mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 		},
 	},

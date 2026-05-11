@@ -13,6 +13,7 @@ import InteractiveMapSection from "@/components/InteractiveMapSection";
 import CountdownSection from "@/components/CountdownSection";
 import GiftSection from "@/components/GiftSection";
 import RSVPSection from "@/components/RSVPSection";
+import InfoPopup from "@/components/InfoPopup";
 import FooterSection from "@/components/FooterSection";
 import MusicPlayer from "@/components/MusicPlayer";
 import Particles from "@/components/Particles";
@@ -42,7 +43,7 @@ export default function Home() {
               groomName={config.groom.name}
               brideName={config.bride.name}
               guestName={guestName}
-              date={config.akad.date}
+              date={config.makanKeluarga.date}
               onOpen={handleOpen}
             />
           )}
@@ -56,19 +57,19 @@ export default function Home() {
             <HeroSection
               groomName={config.groom.name}
               brideName={config.bride.name}
-              date={config.akad.date}
+              date={config.makanKeluarga.date}
             />
 
             <QuoteSection quotes={config.quotes} />
 
             <CoupleSection groom={config.groom} bride={config.bride} />
 
-            <EventSection akad={config.akad} resepsi={null} makanKeluarga={config.makanKeluarga} />
+            <EventSection makanKeluarga={config.makanKeluarga} />
 
             <InteractiveMapSection />
 
             {config.features.countdown && (
-              <CountdownSection date={config.akad.date} />
+              <CountdownSection date={config.makanKeluarga.date} />
             )}
 
             {config.features.gifts && <GiftSection gifts={config.gifts} />}
@@ -84,6 +85,8 @@ export default function Home() {
               hashtag={config.hashtag}
               footerText={config.footerText}
             />
+
+            <InfoPopup />
           </>
         )}
       </main>

@@ -240,50 +240,74 @@ export default function GuestBookSection({ invitationId, initialMessages, guestN
         {/* Messages list */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {messages.length === 0 && (
-            <div className="text-center py-8">
-              <MessageCircle
-                className="mx-auto h-8 w-8"
-                style={{ color: "var(--primary-light)", opacity: 0.3 }}
-              />
-              <p
-                className="mt-2 font-[family-name:var(--font-lora)] text-sm"
-                style={{ color: "var(--text)", opacity: 0.4 }}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-16"
+            >
+              <div
+                className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: "color-mix(in srgb, var(--primary-light) 6%, transparent)" }}
               >
-                Jadilah yang pertama mengirim ucapan!
+                <MessageCircle className="h-6 w-6" style={{ color: "var(--primary-light)", opacity: 0.3 }} />
+              </div>
+              <p className="font-[family-name:var(--font-lora)] text-sm" style={{ color: "var(--text)", opacity: 0.25 }}>
+                Belum ada ucapan & doa
               </p>
-            </div>
+              <p className="font-[family-name:var(--font-cormorant)] text-xs tracking-[0.2em] uppercase mt-2" style={{ color: "var(--text)", opacity: 0.15 }}>
+                Jadilah yang pertama
+              </p>
+            </motion.div>
           )}
           {messages.map((msg, i) => (
             <motion.div
               key={msg.id}
-              className="rounded-lg bg-white p-4"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04, duration: 0.3 }}
+              whileHover={{ y: -2 }}
+              className="rounded-xl bg-white px-5 py-4 transition-shadow duration-200"
               style={{
-                border: `1px solid color-mix(in srgb, var(--primary-light) 10%, transparent)`,
+                boxShadow: `0 1px 3px color-mix(in srgb, var(--primary-light) 6%, transparent), 0 0 0 1px color-mix(in srgb, var(--primary-light) 4%, transparent)`,
               }}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
             >
-              <div className="flex items-center justify-between">
-                <p
-                  className="font-[family-name:var(--font-lora)] text-sm font-semibold"
-                  style={{ color: "var(--text)" }}
+              <div className="flex items-start gap-3.5">
+                <div
+                  className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase"
+                  style={{
+                    backgroundColor: `color-mix(in srgb, var(--primary-light) 10%, transparent)`,
+                    color: "var(--primary)",
+                  }}
                 >
-                  {msg.name}
-                </p>
-                <p
-                  className="font-[family-name:var(--font-cormorant)] text-xs"
-                  style={{ color: "var(--text)", opacity: 0.3 }}
-                >
-                  {timeAgo(msg.created_at)}
-                </p>
+                  {msg.name === "Anonim" ? "—" : msg.name.charAt(0)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span
+                      className="truncate font-[family-name:var(--font-playfair)] text-sm font-semibold"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {msg.name === "Anonim" ? (
+                        <span style={{ opacity: 0.4 }}>Anonim</span>
+                      ) : (
+                        msg.name
+                      )}
+                    </span>
+                    <span
+                      className="flex-shrink-0 font-[family-name:var(--font-cormorant)] text-[11px]"
+                      style={{ color: "var(--text)", opacity: 0.25 }}
+                    >
+                      {timeAgo(msg.created_at)}
+                    </span>
+                  </div>
+                  <p
+                    className="mt-1.5 font-[family-name:var(--font-lora)] text-sm leading-relaxed"
+                    style={{ color: "var(--text)", opacity: 0.75 }}
+                  >
+                    {msg.message}
+                  </p>
+                </div>
               </div>
-              <p
-                className="mt-1 font-[family-name:var(--font-lora)] text-sm"
-                style={{ color: "var(--text)", opacity: 0.7 }}
-              >
-                {msg.message}
-              </p>
             </motion.div>
           ))}
         </div>

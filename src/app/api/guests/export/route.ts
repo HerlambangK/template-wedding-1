@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Tidak ada data tamu" }, { status: 404 });
     }
 
-    const origin = `${request.url.split("/api")[0]}`;
+    const origin = new URL(request.url).origin;
 
     const wsData = (guests as Guest[]).map((g) => {
       const link = `${origin}/u/${invitation.slug}?to=${encodeURIComponent(g.name)}`;

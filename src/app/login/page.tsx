@@ -17,9 +17,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisPassword, setShowRegisPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -64,22 +64,50 @@ export default function LoginPage() {
       setError("Masukkan email terlebih dahulu");
       return;
     }
-    setLoading(true);
-    const { error: sendError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        data: { full_name: name.trim() || email.trim().split("@")[0] },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setLoading(false);
-    if (sendError) {
-      setError(sendError.message);
-      toast.error(sendError.message);
-    } else {
-      setSent(true);
-      toast.success("Link pendaftaran dikirim ke email kamu");
+    if (!password.trim() || password.length < 6) {
+      setError("Password minimal 6 karakter");
+      return;
     }
+    setLoading(true);
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.trim(),
+        password,
+        fullName: name.trim() || email.trim().split("@")[0],
+      }),
+    });
+
+    setLoading(false);
+
+    if (!res.ok) {
+      let msg = "Gagal mendaftarkan akun";
+      try {
+        const body = await res.json();
+        msg = body.error || body.hint || msg;
+      } catch {}
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    // Auto-login after registration
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (signInError) {
+      setError("Akun berhasil dibuat, tapi gagal login otomatis. Silakan login manual.");
+      toast.success("Akun berhasil dibuat!");
+      return;
+    }
+
+    toast.success("Akun berhasil dibuat!");
+    router.push("/dashboard");
+    router.refresh();
   };
 
   const inputClass =
@@ -133,7 +161,7 @@ export default function LoginPage() {
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => { setMode(id); setError(""); setSent(false); }}
+                onClick={() => { setMode(id); setError(""); }}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
                   mode === id ? "bg-[#D4A843] text-black shadow-sm" : "text-gray-400 hover:text-white"
                 }`}
@@ -158,71 +186,66 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {/* Daftar — via Magic Link */}
+          {/* Daftar — langsung email + password */}
           {mode === "register" && (
-            sent ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6"
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nama lengkap (opsional)"
+                  className={inputClass}
+                />
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  className={inputClass}
+                  autoComplete="email"
+                />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <input
+                  type={showRegisPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password (min 6 karakter)"
+                  className="w-full rounded-lg border border-white/20 bg-white/5 pl-10 pr-12 py-3 text-sm text-white placeholder-gray-500 outline-none transition-all focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]/20"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisPassword(!showRegisPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showRegisPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#D4A843] px-6 py-3 text-sm font-semibold text-black transition-all hover:bg-[#B8860B] disabled:opacity-50 active:scale-[0.98]"
               >
-                <Mail className="mx-auto h-10 w-10 text-[#D4A843]" />
-                <p className="mt-4 text-sm text-white">Link pendaftaran dikirim ke</p>
-                <p className="mt-1 text-base text-[#D4A843] font-medium break-all">{email}</p>
-                <p className="mt-2 text-xs text-gray-500">
-                  Klik link di email untuk masuk. <br />Nanti kamu bisa atur password dari dashboard.
-                </p>
-                <button
-                  onClick={() => { setSent(false); setMode("login"); }}
-                  className="mt-4 text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  ← Kembali
-                </button>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="relative"
-                >
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Nama lengkap (opsional)"
-                    className={inputClass}
-                  />
-                </motion.div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className={inputClass}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#D4A843] px-6 py-3 text-sm font-semibold text-black transition-all hover:bg-[#B8860B] disabled:opacity-50 active:scale-[0.98]"
-                >
-                  {loading ? (
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  {loading ? "Mengirim..." : "Daftar — kirim link ke email"}
-                </button>
-              </form>
-            )
+                {loading ? (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {loading ? "Memproses..." : "Daftar"}
+              </button>
+            </form>
           )}
 
           {/* Masuk — email + password */}

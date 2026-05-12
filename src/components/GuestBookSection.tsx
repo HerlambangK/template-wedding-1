@@ -1,30 +1,71 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { GuestMessage } from "@/lib/types";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Gift } from "lucide-react";
+
+const EMOJIS = [
+  "💍", "🎊", "🎉", "💐", "🌸", "🌺", "💒", "🕊️",
+  "💕", "❤️", "💖", "💗", "💝", "💘", "🥰", "😍",
+  "🎀", "🎈", "🥂", "🍾", "✨", "🌹", "🎁", "🧧",
+  "🙏", "🤲", "💌", "☺️", "😊", "🤗", "👰", "🤵",
+];
 
 interface Props {
   invitationId: string;
   initialMessages: GuestMessage[];
+  guestName?: string;
 }
 
-export default function GuestBookSection({ invitationId, initialMessages }: Props) {
+export default function GuestBookSection({ invitationId, initialMessages, guestName }: Props) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
   const supabase = createClient();
 
   const [messages, setMessages] = useState<GuestMessage[]>(initialMessages);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(guestName || "");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
 
-  // Realtime subscription
+  // Close emoji picker on outside click
+  useEffect(() => {
+    if (!showEmoji) return;
+    const handler = (e: MouseEvent) => {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setShowEmoji(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showEmoji]);
+
+  const insertEmoji = useCallback((emoji: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const next = message.slice(0, start) + emoji + message.slice(end);
+    setMessage(next);
+    // restore cursor position after React re-render
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  }, [message]);
+
+  useEffect(() => {
+    if (guestName) setName(guestName);
+  }, [guestName]);
+
+  // Realtime subscription — pesan dari orang lain muncul otomatis
   useEffect(() => {
     const channel = supabase
-      .channel("guest-messages")
+      .channel(`guest-messages-${invitationId}`)
       .on(
         "postgres_changes",
         {
@@ -36,7 +77,10 @@ export default function GuestBookSection({ invitationId, initialMessages }: Prop
         (payload: { new: Record<string, unknown> }) => {
           const newMsg = payload.new as unknown as GuestMessage;
           if (newMsg.is_visible) {
-            setMessages((prev) => [newMsg, ...prev]);
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
+              return [newMsg, ...prev];
+            });
           }
         }
       )
@@ -49,16 +93,28 @@ export default function GuestBookSection({ invitationId, initialMessages }: Prop
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !message.trim()) return;
+    if (!message.trim()) return;
     setSending(true);
 
-    await supabase.from("guest_messages").insert({
-      invitation_id: invitationId,
-      name: name.trim(),
-      message: message.trim(),
-    });
+    const { data, error } = await supabase
+      .from("guest_messages")
+      .insert({
+        invitation_id: invitationId,
+        name: name.trim() || "Anonim",
+        message: message.trim(),
+      })
+      .select()
+      .single();
 
-    setName("");
+    if (!error && data) {
+      // Optimistic update — pesan langsung muncul tanpa nunggu Realtime
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === data.id)) return prev;
+        return [data, ...prev];
+      });
+    }
+
+    setName(guestName || "");
     setMessage("");
     setSending(false);
   };
@@ -109,28 +165,66 @@ export default function GuestBookSection({ invitationId, initialMessages }: Prop
           <div className="space-y-3">
             <input
               type="text"
-              required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nama Anda"
+              placeholder="Nama Anda (kosongkan jika ingin anonim)"
               className="w-full rounded-lg bg-transparent px-4 py-2.5 font-[family-name:var(--font-lora)] text-sm outline-none"
               style={{
                 border: `1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)`,
                 color: "var(--text)",
               }}
             />
-            <textarea
-              required
-              rows={3}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Tulis ucapan & doa..."
-              className="w-full resize-none rounded-lg bg-transparent px-4 py-2.5 font-[family-name:var(--font-lora)] text-sm outline-none"
-              style={{
-                border: `1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)`,
-                color: "var(--text)",
-              }}
-            />
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                required
+                rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tulis ucapan & doa..."
+                className="w-full resize-none rounded-lg bg-transparent px-4 py-2.5 pr-10 font-[family-name:var(--font-lora)] text-sm outline-none"
+                style={{
+                  border: `1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)`,
+                  color: "var(--text)",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowEmoji((v) => !v)}
+                className="absolute right-2 top-2 rounded-md p-1 text-lg transition-colors hover:bg-black/5"
+                title="Tambahkan emoji / stiker"
+              >
+                <Gift className="h-4 w-4" style={{ color: "var(--primary)" }} />
+              </button>
+            </div>
+
+            {/* Emoji picker */}
+            <AnimatePresence>
+              {showEmoji && (
+                <motion.div
+                  ref={emojiRef}
+                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="rounded-xl border bg-white p-3 shadow-lg"
+                  style={{ borderColor: "color-mix(in srgb, var(--primary-light) 20%, transparent)" }}
+                >
+                  <div className="grid grid-cols-8 gap-1">
+                    {EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => { insertEmoji(emoji); }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-colors hover:bg-black/5"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <button
               type="submit"
               disabled={sending}

@@ -167,6 +167,7 @@ export default function PublicInvitation({ invitation, messages }: Props) {
               groomName={data.groom.name}
               brideName={data.bride.name}
               invitationId={invitation.id}
+              guestName={guestName}
             />
           )}
 
@@ -174,6 +175,7 @@ export default function PublicInvitation({ invitation, messages }: Props) {
             <GuestBookSection
               invitationId={invitation.id}
               initialMessages={messages}
+              guestName={guestName}
             />
           )}
 

@@ -5,13 +5,13 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Send, CheckCircle } from "lucide-react";
 
-export default function RSVPSection({ groomName, brideName, invitationId }: { groomName: string; brideName: string; invitationId?: string }) {
+export default function RSVPSection({ groomName, brideName, invitationId, guestName }: { groomName: string; brideName: string; invitationId?: string; guestName?: string }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    name: guestName || "",
     attendance: "hadir",
     guests: "1",
     message: "",
@@ -21,11 +21,17 @@ export default function RSVPSection({ groomName, brideName, invitationId }: { gr
     e.preventDefault();
     setLoading(true);
 
+    const payload = {
+      ...formData,
+      name: formData.name.trim() || "Anonim",
+      invitation_id: invitationId,
+    };
+
     try {
       const res = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, invitation_id: invitationId }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -82,12 +88,11 @@ export default function RSVPSection({ groomName, brideName, invitationId }: { gr
                 <label className="font-[family-name:var(--font-cormorant)] mb-2 block text-xs tracking-[0.15em] uppercase" style={{ color: "var(--text)", opacity: 0.5 }}>Nama</label>
                 <input
                   type="text"
-                  required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full rounded-lg bg-transparent px-4 py-2.5 font-[family-name:var(--font-lora)] text-sm outline-none transition-all focus:ring-1"
                   style={{ ...inputStyle, "--tw-ring-color": "var(--primary)" } as React.CSSProperties}
-                  placeholder="Nama lengkap Anda"
+                  placeholder="Nama lengkap Anda (kosongkan jika ingin anonim)"
                 />
               </div>
 

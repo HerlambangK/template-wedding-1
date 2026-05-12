@@ -183,9 +183,13 @@ CREATE POLICY "Anyone can view guests for published invitations" ON guests FOR S
 -- Functions & Triggers
 -- ============================================================
 
--- Auto-create profile on signup — PENTING! Ini mengatasi error foreign key
+-- Auto-create profile on signup
+-- DIBUNGKUS EXCEPTION supaya error insert profile TIDAK menggagalkan pembuatan user
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO profiles (id, email, full_name, avatar_url, plan, created_at, updated_at)
   VALUES (
@@ -199,8 +203,11 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'handle_new_user gagal untuk user %: %', NEW.id, SQLERRM;
+  RETURN NEW;  -- tetap return NEW biar user tetap terdaftar
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

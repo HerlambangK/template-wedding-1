@@ -30,7 +30,7 @@ export default function InfoPopup() {
         >
           <div className="flex justify-between items-start gap-2">
             <p className="text-sm" style={{ color: "var(--text)" }}>
-              🎉 <span className="font-semibold">Info:</span> Tasyakuran keluarga di Resto Nawasena. 
+              🎉 <span className="font-semibold">Info:</span> Tasyakuran keluarga di Ballroom Nawasena Madiun. 
               Tidak menerima tamu di rumah. Hanya saat tasyakuran ya!
             </p>
             <button

@@ -398,7 +398,7 @@ export default function InteractiveMapSection() {
 						</motion.div>
 					)}
 
-					{/* Resto Nawasena info card */}
+					{/* Ballroom Nawasena info card */}
 					<div className='absolute bottom-2 left-2 right-2 md:bottom-4 md:left-4 md:right-4 z-[1001]'>
 						<motion.div
 							className='rounded-lg md:rounded-xl p-2 md:p-4 shadow-lg'
@@ -424,13 +424,13 @@ export default function InteractiveMapSection() {
 										className='font-[family-name:var(--font-playfair)] text-xs font-bold md:text-base'
 										style={{ color: 'var(--text)' }}
 									>
-										Resto Nawasena
+										Ballroom Nawasena Madiun
 									</p>
 									<p
 										className='hidden md:block font-[family-name:var(--font-cormorant)] text-xs tracking-wider uppercase'
 										style={{ color: 'var(--text-light)' }}
 									>
-										Lokasi Makan Keluarga
+										Tasyakuran Keluarga
 									</p>
 								</div>
 								<a
@@ -504,7 +504,7 @@ export default function InteractiveMapSection() {
 					</div>
 				</motion.div>
 
-				{/* RM Nawasena - Lokasi Makan Keluarga */}
+				{/* Ballroom Nawasena - Tasyakuran Keluarga */}
 				<motion.div
 					className='mb-8 text-center'
 					initial={{ opacity: 0, y: 20 }}
@@ -515,7 +515,7 @@ export default function InteractiveMapSection() {
 						className='font-[family-name:var(--font-cormorant)] text-sm tracking-[0.2em] uppercase mb-4'
 						style={{ color: 'var(--secondary)' }}
 					>
-						Tempat Makan Keluarga
+						Tasyakuran Keluarga
 					</p>
 					<a
 						href={config.locations.familyGathering.mapsUrl}
@@ -527,8 +527,8 @@ export default function InteractiveMapSection() {
 							color: '#FFFFFF',
 						}}
 					>
-						<span className='text-xl'>🍽️</span>
-						<span>RM Nawasena Madiun</span>
+						<span className='text-xl'>🎉</span>
+						<span>Ballroom Nawasena Madiun</span>
 						<span className='text-lg'>📍</span>
 					</a>
 					<p

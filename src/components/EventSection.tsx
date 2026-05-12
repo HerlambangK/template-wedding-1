@@ -117,7 +117,7 @@ export default function EventSection({ makanKeluarga }: EventSectionProps) {
         >
           <p className="text-2xl mb-3">🎉</p>
           <p className="text-sm font-medium mb-3" style={{ color: "var(--text)" }}>
-            Tasyakuran keluarga akan dilaksanakan di Resto Nawasena setelah acara berlangsung.
+            Tasyakuran keluarga akan dilaksanakan di Ballroom Nawasena Madiun setelah acara berlangsung.
           </p>
           <p className="text-sm mb-4" style={{ color: "var(--text)" }}>
             Kami mengundang keluarga untuk hadir tepat waktu sesuai jadwal yang telah ditentukan.

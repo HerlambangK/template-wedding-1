@@ -97,3 +97,18 @@ export interface Profile {
   plan: "free" | "premium" | "business";
   created_at: string;
 }
+
+export interface Guest {
+  id: string;
+  invitation_id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  category: string | null;
+  status: "pending" | "invited" | "confirmed" | "declined";
+  notes: string | null;
+  rsvp_id: string | null;
+  created_at: string;
+  updated_at: string;
+}

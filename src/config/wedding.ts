@@ -196,7 +196,7 @@ export const config = {
 		father: '',
 		mother: '',
 		childOrder: 'Putra tercinta',
-		photo: '/images/groom.jpg',
+		photo: '/images/herlambang-profil.png',
 		instagram: '',
 	},
 	bride: {
@@ -205,7 +205,7 @@ export const config = {
 		father: '',
 		mother: '',
 		childOrder: 'Putri tercinta',
-		photo: '/images/bride.jpg',
+		photo: '/images/Rela-blue.jpeg',
 		instagram: '',
 	},
 

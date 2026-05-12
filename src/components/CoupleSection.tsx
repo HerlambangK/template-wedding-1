@@ -31,31 +31,45 @@ function PersonCard({ person, index }: { person: PersonInfo; index: number }) {
         whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 300 }}
       >
-        <div className="relative h-32 w-32 max-w-full sm:h-48 sm:w-48 md:h-56 md:w-56">
-          <motion.div
+        <div className="relative h-32 w-32 sm:h-48 sm:w-48 md:h-56 md:w-56">
+          <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: `conic-gradient(from 0deg, var(--primary-light), transparent, var(--primary-light), transparent, var(--primary-light))`,
-              padding: 2,
+              background: `conic-gradient(from 0deg, var(--primary-light), transparent 60deg, var(--primary-light) 120deg, transparent 180deg, var(--primary-light) 240deg, transparent 300deg, var(--primary-light))`,
+              padding: 3,
             }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
             <div className="h-full w-full rounded-full" style={{ backgroundColor: "var(--bg-alt)" }} />
-          </motion.div>
+          </div>
 
           <div
-            className="absolute inset-2 overflow-hidden rounded-full flex items-center justify-center"
+            className="absolute overflow-hidden rounded-full"
             style={{
-              background: `linear-gradient(135deg, var(--bg-alt), var(--bg-dark))`,
+              inset: 3,
+              boxShadow: `0 4px 24px rgba(0,0,0,0.15)`,
             }}
           >
-            <span
-              className="font-[family-name:var(--font-playfair)] text-3xl font-bold sm:text-5xl"
-              style={{ color: "var(--primary)", opacity: 0.8 }}
-            >
-              {person.name.charAt(0).toUpperCase()}
-            </span>
+            {person.photo ? (
+              <img
+                src={person.photo}
+                alt={person.fullName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, var(--bg-alt), var(--bg-dark))`,
+                }}
+              >
+                <span
+                  className="font-[family-name:var(--font-playfair)] text-3xl font-bold sm:text-5xl"
+                  style={{ color: "var(--primary)", opacity: 0.8 }}
+                >
+                  {person.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

@@ -84,7 +84,7 @@ interface Props {
 
 export default function PublicInvitation({ invitation, messages }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  const [guestName, setGuestName] = useState("Tamu Undangan");
+  const [guestName, setGuestName] = useState("");
 
   const data = mapInvitation(invitation);
 

@@ -4,10 +4,12 @@ import { useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Send, CheckCircle } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 export default function RSVPSection({ groomName, brideName, invitationId, guestName }: { groomName: string; brideName: string; invitationId?: string; guestName?: string }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,6 +27,7 @@ export default function RSVPSection({ groomName, brideName, invitationId, guestN
       ...formData,
       name: formData.name.trim() || "Anonim",
       invitation_id: invitationId,
+      guestName: guestName || null,
     };
 
     try {
@@ -37,12 +40,11 @@ export default function RSVPSection({ groomName, brideName, invitationId, guestN
       if (res.ok) {
         setSubmitted(true);
       } else {
-        // Fallback: still show success (API optional)
-        setSubmitted(true);
+        const result = await res.json();
+        toast("error", result.error || "Gagal mengirim konfirmasi");
       }
     } catch {
-      // API not set up yet — show success anyway
-      setSubmitted(true);
+      toast("error", "Gagal mengirim konfirmasi. Periksa koneksi Anda.");
     } finally {
       setLoading(false);
     }
@@ -80,6 +82,12 @@ export default function RSVPSection({ groomName, brideName, invitationId, guestN
               </p>
               <p className="font-[family-name:var(--font-lora)] mt-2 text-sm" style={{ color: "var(--text)", opacity: 0.6 }}>
                 Konfirmasi kehadiran Anda telah kami terima.<br />Kami menantikan kehadiran Anda.
+              </p>
+            </div>
+          ) : !invitationId ? (
+            <div className="py-8 text-center">
+              <p className="font-[family-name:var(--font-playfair)] text-lg italic" style={{ color: "var(--text)", opacity: 0.5 }}>
+                Anda belum jadi undangan
               </p>
             </div>
           ) : (

@@ -159,7 +159,7 @@ export default function Cover({
             className="font-[family-name:var(--font-playfair)] mt-2 text-2xl sm:text-3xl"
             style={{ color: "var(--cover-text)" }}
           >
-            {guestName}
+            {guestName || "Tamu Undangan"}
           </p>
         </motion.div>
 

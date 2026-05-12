@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS invitations (
 
   theme_preset TEXT DEFAULT 'gold',
   custom_theme JSONB,
-  quotes JSONB DEFAULT '[{"text": "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.", "source": "QS. Ar-Rum: 21"}]',
+  quotes JSONB DEFAULT '[{"arabic": "وَمِنْ اٰيٰتِهٖٓ اَنْ خَلَقَ لَكُمْ مِّنْ اَنْفُسِكُمْ اَزْوَاجًا لِّتَسْكُنُوْٓا اِلَيْهَا وَجَعَلَ بَيْنَكُمْ مَّوَدَّةً وَّرَحْمَةً ۗاِنَّ فِيْ ذٰلِكَ لَاٰيٰتٍ لِّقَوْمٍ يَّتَفَكَّرُوْنَ", "text": "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.", "source": "QS. Ar-Rum: 21"}]',
   gallery JSONB DEFAULT '[]',
   gifts JSONB DEFAULT '[]',
   music_url TEXT,

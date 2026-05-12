@@ -26,15 +26,15 @@ function CountdownBox({ value, label, index }: { value: number; label: string; i
   return (
     <motion.div
       ref={ref}
-      className="countdown-box rounded-2xl px-3 sm:px-5 py-4 sm:py-6 text-center min-w-[65px] sm:min-w-[75px] md:min-w-[90px]"
+      className="countdown-box rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-3 sm:py-6 text-center min-w-[58px] sm:min-w-[75px] md:min-w-[90px]"
       initial={{ opacity: 0, y: 30, rotateX: 45 }}
       animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.1 }}
     >
-      <p className="font-[family-name:var(--font-playfair)] text-3xl sm:text-5xl tabular-nums" style={{ color: "var(--primary)" }}>
+      <p className="font-[family-name:var(--font-playfair)] text-2xl sm:text-5xl tabular-nums" style={{ color: "var(--primary)" }}>
         {String(value).padStart(2, "0")}
       </p>
-      <p className="font-[family-name:var(--font-cormorant)] mt-2 text-[10px] sm:text-xs tracking-[0.25em] uppercase" style={{ color: "var(--text)", opacity: 0.4 }}>
+      <p className="font-[family-name:var(--font-cormorant)] mt-1 sm:mt-2 text-[9px] sm:text-xs tracking-[0.25em] uppercase" style={{ color: "var(--text)", opacity: 0.4 }}>
         {label}
       </p>
     </motion.div>

@@ -24,18 +24,18 @@ export default function QuoteSection({ quotes }: { quotes: Quote[] }) {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: index * 0.2 }}
           >
-            <span className="font-[family-name:var(--font-playfair)] text-6xl opacity-30" style={{ color: "var(--primary-light)" }}>
+            <span className="font-[family-name:var(--font-playfair)] text-4xl sm:text-6xl opacity-30" style={{ color: "var(--primary-light)" }}>
               ❝
             </span>
             {quote.arabic && (
-              <p className="mt-6 text-2xl leading-relaxed" style={{ color: "var(--primary)", fontFamily: "system-ui" }} dir="rtl">
+              <p className="mt-4 sm:mt-6 text-lg sm:text-2xl leading-relaxed" style={{ color: "var(--primary)", fontFamily: "system-ui" }} dir="rtl">
                 {quote.arabic}
               </p>
             )}
-            <p className="font-[family-name:var(--font-cormorant)] mt-6 text-xl leading-relaxed italic" style={{ color: "var(--text)", opacity: 0.8 }}>
+            <p className="font-[family-name:var(--font-cormorant)] mt-4 sm:mt-6 text-base sm:text-xl leading-relaxed italic" style={{ color: "var(--text)", opacity: 0.8 }}>
               {quote.text}
             </p>
-            <p className="font-[family-name:var(--font-lora)] mt-4 text-sm" style={{ color: "var(--primary)" }}>
+            <p className="font-[family-name:var(--font-lora)] mt-3 sm:mt-4 text-xs sm:text-sm" style={{ color: "var(--primary)" }}>
               — {quote.source}
             </p>
           </motion.div>

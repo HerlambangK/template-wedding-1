@@ -42,6 +42,7 @@ export default async function DashboardPage() {
       resepsi_venue: config.makanKeluarga.venue,
       resepsi_address: config.makanKeluarga.address,
       resepsi_maps_url: config.makanKeluarga.mapsUrl,
+      music_url: config.music.src,
       theme_preset: "gold",
       feature_music: config.features.music,
       feature_particles: config.features.particles,

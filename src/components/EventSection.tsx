@@ -49,42 +49,42 @@ export default function EventSection({ makanKeluarga }: EventSectionProps) {
         </motion.div>
 
         <motion.div
-          className="rounded-2xl bg-white p-8 shadow-sm"
+          className="rounded-2xl bg-white p-5 sm:p-8 shadow-sm"
           style={{ border: `1px solid color-mix(in srgb, var(--primary-light) 20%, transparent)` }}
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <h3 className="text-2xl font-semibold text-center" style={{ color: "var(--text)" }}>
+          <h3 className="font-[family-name:var(--font-playfair)] text-xl sm:text-2xl font-semibold text-center italic" style={{ color: "var(--text)" }}>
             Makan Keluarga
           </h3>
 
-          <div className="ornament-divider my-6">
+          <div className="ornament-divider my-4 sm:my-6">
             <span className="text-xs" style={{ color: "var(--primary)" }}>✦</span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4" style={{ color: "var(--primary)" }} />
-              <p className="text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
+              <Calendar className="h-5 w-5 sm:h-4 sm:w-4" style={{ color: "var(--primary)" }} />
+              <p className="font-[family-name:var(--font-lora)] text-xs sm:text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
                 {formattedDate}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <Clock className="h-4 w-4" style={{ color: "var(--primary)" }} />
-              <p className="text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
+              <Clock className="h-5 w-5 sm:h-4 sm:w-4" style={{ color: "var(--primary)" }} />
+              <p className="font-[family-name:var(--font-lora)] text-xs sm:text-sm" style={{ color: "var(--text)", opacity: 0.8 }}>
                 {makanKeluarga.time} - {makanKeluarga.endTime} WIB
               </p>
             </div>
 
             <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-4 w-4" style={{ color: "var(--primary)" }} />
+              <MapPin className="mt-0.5 h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
               <div>
-                <p className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                <p className="font-[family-name:var(--font-playfair)] text-sm sm:text-base font-semibold" style={{ color: "var(--text)" }}>
                   {makanKeluarga.venue}
                 </p>
-                <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text)", opacity: 0.6 }}>
+                <p className="mt-1 font-[family-name:var(--font-lora)] text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text)", opacity: 0.6 }}>
                   {makanKeluarga.address}
                 </p>
               </div>

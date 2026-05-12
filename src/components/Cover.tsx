@@ -2,10 +2,17 @@
 
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
+import { Component, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { config } from "@/config/wedding";
 
 const Scene3D = dynamic(() => import("./Scene3D"), { ssr: false });
+
+class ErrorBoundary extends Component<{ children: ReactNode }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
 
 interface CoverProps {
   groomName: string;
@@ -40,7 +47,9 @@ export default function Cover({
         transition: { duration: 1, ease: [0.65, 0, 0.35, 1] },
       }}
     >
-      {config.features.threeD && <Scene3D variant="cover" />}
+      {config.features.threeD && (
+        <ErrorBoundary><Scene3D variant="cover" /></ErrorBoundary>
+      )}
 
       {/* Decorative corner ornaments */}
       <div className="pointer-events-none absolute inset-0">

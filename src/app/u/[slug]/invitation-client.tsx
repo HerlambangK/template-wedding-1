@@ -17,6 +17,7 @@ import RSVPSection from "@/components/RSVPSection";
 import GuestBookSection from "@/components/GuestBookSection";
 import FooterSection from "@/components/FooterSection";
 import MusicPlayer from "@/components/MusicPlayer";
+import InfoPopup from "@/components/InfoPopup";
 import Particles from "@/components/Particles";
 
 // Convert DB invitation to component-friendly props
@@ -138,6 +139,7 @@ export default function PublicInvitation({ invitation, messages }: Props) {
       {isOpen && (
         <>
           {data.features.music && data.musicUrl && <MusicPlayer src={data.musicUrl} />}
+          <InfoPopup />
           {data.features.particles && <Particles />}
 
           <HeroSection

@@ -108,17 +108,18 @@ export default function FooterSection({
 						className='font-[family-name:var(--font-cormorant)] text-xs'
 						style={{ color: 'var(--cover-text)' }}
 					>
-						© 2026 · Made with{' '}
+						© 2026 · Herlambang{' '}
 						<motion.span
 							className='inline-block'
-							animate={{ scale: [1, 1.3, 1] }}
+							animate={{ scale: [1, 1.4, 1] }}
 							transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
 						>
 							<Heart
 								className='inline h-3 w-3'
 								style={{ color: '#ef4444', fill: 'currentColor' }}
 							/>
-						</motion.span>
+						</motion.span>{' '}
+						Rela
 					</p>
 				</div>
 			</div>

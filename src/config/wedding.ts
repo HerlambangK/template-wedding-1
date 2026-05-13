@@ -277,7 +277,7 @@ export const config = {
 	],
 
 	// 📱 Social / Footer
-	hashtag: '#HerlambangRela2026',
+	hashtag: '#TEMPUHSELAMANYA',
 	footerText: 'With Love, Herlambang & Rela',
 
 	// ⚙️ Features Toggle

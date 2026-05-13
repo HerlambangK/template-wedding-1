@@ -87,6 +87,54 @@ export default function InteractiveMapSection() {
 	const [L, setL] = useState<any>(null);
 	const [arrived, setArrived] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+	const [activeStep, setActiveStep] = useState(0);
+	const [flowProgress, setFlowProgress] = useState(0);
+	const [showPopup, setShowPopup] = useState(true);
+
+	// Sequential flow: show popup → flow to next → repeat
+	useEffect(() => {
+		if (!isInView) return;
+
+		setShowPopup(true);
+		setFlowProgress(0);
+
+		const showDuration = 3200;
+		const flowDuration = 2500;
+
+		let raf: number;
+
+		const showTimer = setTimeout(() => {
+			setShowPopup(false);
+
+			const start = performance.now();
+
+			const animate = (now: number) => {
+				const p = Math.min((now - start) / flowDuration, 1);
+				setFlowProgress(p);
+
+				if (p < 1) {
+					raf = requestAnimationFrame(animate);
+				} else {
+					setFlowProgress(0);
+					setActiveStep(prev => (prev + 1) % 4);
+				}
+			};
+
+			raf = requestAnimationFrame(animate);
+		}, showDuration);
+
+		return () => {
+			clearTimeout(showTimer);
+			if (raf) cancelAnimationFrame(raf);
+		};
+	}, [activeStep, isInView]);
+
+	const steps = [
+		{ icon: '🏠', label: 'Awal Pertemuan', desc: 'Dua insan dari tempat yang berbeda, dipertemukan oleh takdir', color: '#C8A96B' },
+		{ icon: '💞', label: 'Menjadi Satu Hati', desc: 'Dari perkenalan, tumbuh menjadi pasangan yang saling melengkapi', color: '#D8B4A0' },
+		{ icon: '🕌', label: 'Akad Suci', desc: 'Ikrar janji suci dalam ikatan pernikahan', color: '#C8A96B' },
+		{ icon: '🍽️', label: 'Syukuran Keluarga', desc: 'Merayakan kebahagiaan bersama keluarga tercinta', color: '#D8B4A0' },
+	];
 
 	const galleryImages = [
 		{ src: '/images/nawasena/nawasena-ballroom.jpg', alt: 'Ballroom' },
@@ -485,61 +533,166 @@ export default function InteractiveMapSection() {
 					</div>
 				</div>
 
-				{/* Mini Wedding Journey Timeline */}
-				<div
-					className='mb-8 sm:mb-12 overflow-x-auto pb-1'
-					style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(200,169,107,0.3) transparent' }}
-				>
-					<motion.div
-						className='mx-auto flex w-max min-w-full items-center justify-center gap-0 px-4'
-						initial={{ opacity: 0 }}
-						whileInView={{ opacity: 1 }}
-						viewport={{ once: true, margin: '-50px' }}
-						transition={{ duration: 0.8, delay: 0.6 }}
-					>
-						{[
-							{ icon: '🏠', label: 'Berangkat', color: '#C8A96B' },
-							{ icon: '🚘', label: 'Perjalanan', color: '#D8B4A0' },
-							{ icon: '🕌', label: 'Menikah', color: '#C8A96B' },
-							{ icon: '🍽️', label: 'Family Time', color: '#D8B4A0' },
-						].map((step, i, arr) => (
+				{/* Wedding Journey Timeline */}
+				<div className='mb-8 sm:mb-12'>
+					{/* Desktop: horizontal circles + per-circle popup */}
+					<div className='hidden md:block'>
+						<div className='flex items-center justify-center'>
+							{steps.map((step, i, arr) => (
+								<div key={i} className='flex items-center'>
+									<div className='relative flex flex-col items-center'>
+										{/* Per-circle floating popup */}
+										<div
+											className='absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-max max-w-[260px] z-10 transition-all duration-300 ease-out pointer-events-none'
+											style={{
+												opacity: activeStep === i && showPopup ? 1 : 0,
+												transform: activeStep === i && showPopup ? 'translateY(0) scale(1)' : 'translateY(4px) scale(0.95)',
+											}}
+										>
+											<div
+												className='rounded-md px-4 py-1.5 shadow-lg backdrop-blur-md text-center'
+												style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${step.color} 25%, #1a1a2e), #16213e)`, border: `1px solid ${step.color}55` }}
+											>
+												<p className='text-[11px] font-semibold leading-tight' style={{ color: step.color }}>{step.label}</p>
+												<p className='text-[9px] leading-snug text-white/65'>{step.desc}</p>
+											</div>
+										</div>
+										<div className='relative'>
+											<motion.div
+												className='absolute inset-[-5px] rounded-full'
+												animate={activeStep === i && showPopup ? { scale: [1, 1.35, 1], opacity: [0.45, 0, 0.45] } : { scale: 1, opacity: 0 }}
+												transition={activeStep === i && showPopup ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
+												style={{ background: `radial-gradient(circle, ${step.color}55 0%, transparent 70%)` }}
+											/>
+											<div
+												className='relative flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all duration-700'
+												style={{
+													backgroundColor: activeStep === i ? `color-mix(in srgb, ${step.color} 35%, transparent)` : `color-mix(in srgb, ${step.color} 12%, transparent)`,
+													border: activeStep === i ? `2px solid ${step.color}` : `2px solid ${step.color}55`,
+													boxShadow: activeStep === i && showPopup ? `0 0 24px ${step.color}44, 0 0 48px ${step.color}22` : 'none',
+												}}
+											>
+												{step.icon}
+											</div>
+										</div>
+										<span
+											className='mt-2 whitespace-nowrap text-[11px] font-medium tracking-wide transition-all duration-700'
+											style={{ color: activeStep === i ? step.color : 'var(--text-light)', opacity: activeStep === i ? 1 : 0.5 }}
+										>
+											{step.label}
+										</span>
+									</div>
+									{i < arr.length - 1 && (
+										<div className='relative mx-3 h-px w-16 lg:w-24'>
+											<div className='absolute inset-0 rounded-full' style={{ background: `linear-gradient(to right, ${step.color}33, ${arr[i + 1].color}33)` }} />
+											{activeStep === i && (
+												<div
+													className='absolute inset-y-0 left-0 rounded-full'
+													style={{ width: `${flowProgress * 100}%`, background: `linear-gradient(to right, ${step.color}, ${arr[i + 1].color})`, boxShadow: `0 0 5px ${step.color}`, transition: 'none' }}
+												/>
+											)}
+											<div
+												className='absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-2 w-2 rounded-full'
+												style={{
+													left: activeStep === i ? `${flowProgress * 100}%` : '-10%',
+													opacity: activeStep === i && flowProgress > 0 ? 1 : 0,
+													backgroundColor: arr[i + 1].color,
+													boxShadow: activeStep === i && flowProgress > 0 ? `0 0 6px ${arr[i + 1].color}` : 'none',
+													transition: 'none',
+												}}
+											/>
+										</div>
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Mobile: vertical cards — all visible, active glows */}
+					<div className='md:hidden px-1'>
+						{steps.map((step, i) => (
 							<motion.div
 								key={i}
-								className='flex items-center'
-								initial={{ opacity: 0, x: -40 }}
-								whileInView={{ opacity: 1, x: 0 }}
-								viewport={{ once: true, margin: '-50px' }}
-								transition={{ duration: 0.8, delay: 0.8 + i * 0.2, ease: 'easeOut' }}
+								className='relative pb-6 last:pb-0'
+								initial={{ opacity: 0, y: 16 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								viewport={{ once: true, margin: '-30px' }}
+								transition={{ duration: 0.35, delay: 0.1 + i * 0.1 }}
 							>
-								<div className='flex flex-col items-center'>
+								{/* Connecting line */}
+								{i < 3 && (
 									<div
-										className='flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-sm sm:text-lg'
+										className='absolute left-[21px] top-11 bottom-0 w-[2px]'
 										style={{
-											backgroundColor: `color-mix(in srgb, ${step.color} 20%, transparent)`,
-											border: `2px solid ${step.color}`,
+											background: activeStep === i
+												? 'linear-gradient(to bottom, #C8A96B, rgba(200,169,107,0.15))'
+												: 'linear-gradient(to bottom, rgba(200,169,107,0.2), rgba(200,169,107,0.04))',
+										}}
+									/>
+								)}
+
+								{/* Card */}
+								<div
+									className='relative flex items-start gap-4 rounded-xl p-4 transition-all duration-500'
+									style={{
+										background: activeStep === i
+											? '#ffffff'
+											: 'rgba(255,255,255,0.85)',
+										border: activeStep === i
+											? '1px solid #C8A96B'
+											: '1px solid rgba(200,169,107,0.15)',
+										boxShadow: activeStep === i
+											? '0 4px 30px rgba(200,169,107,0.25), 0 0 60px rgba(200,169,107,0.08), inset 0 1px 0 rgba(200,169,107,0.15)'
+											: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
+									}}
+								>
+									{/* Icon circle */}
+									<div
+										className='relative flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full text-lg transition-all duration-500'
+										style={{
+											background: activeStep === i
+												? 'linear-gradient(145deg, #C8A96B, #B8944E)'
+												: 'linear-gradient(145deg, #C8A96B22, #C8A96B08)',
+											border: activeStep === i
+												? '1.5px solid #C8A96B'
+												: '1.5px solid rgba(200,169,107,0.2)',
+											boxShadow: activeStep === i ? '0 0 20px rgba(200,169,107,0.35)' : 'none',
+											color: activeStep === i ? '#fff' : '#C8A96B',
 										}}
 									>
 										{step.icon}
 									</div>
-									<span
-										className='mt-1 whitespace-nowrap text-[9px] sm:text-[10px] font-medium tracking-wide'
-										style={{ color: 'var(--text-light)' }}
-									>
-										{step.label}
-									</span>
+
+									{/* Label + description — always visible */}
+									<div className='flex-1 min-w-0 pt-0.5'>
+										<p
+											className='font-[family-name:var(--font-playfair)] text-[15px] font-bold leading-tight transition-all duration-500'
+											style={{ color: activeStep === i ? '#8B7536' : '#A0884E' }}
+										>
+											{step.label}
+										</p>
+										<p
+											className='mt-1.5 text-[12px] leading-relaxed transition-all duration-500'
+											style={{ color: activeStep === i ? '#C8A96B' : 'rgba(160,136,78,0.5)' }}
+										>
+											{step.desc}
+										</p>
+									</div>
+
+									{/* Active gold glow overlay */}
+									{activeStep === i && (
+										<div
+											className='absolute -inset-[1px] rounded-xl pointer-events-none'
+											style={{
+												background: 'linear-gradient(145deg, rgba(200,169,107,0.1), transparent 60%)',
+												borderRadius: 'inherit',
+											}}
+										/>
+									)}
 								</div>
-								{i < arr.length - 1 && (
-									<div
-										className='mx-1 sm:mx-2 mt-[-1rem] sm:mt-[-1.2rem] h-px w-4 sm:w-12 lg:w-20'
-										style={{
-											background: `linear-gradient(to right, ${step.color}, ${arr[i + 1].color})`,
-											opacity: 0.4,
-										}}
-									/>
-								)}
 							</motion.div>
 						))}
-					</motion.div>
+					</div>
 				</div>
 
 				{/* Ballroom Nawasena - Tasyakuran Keluarga */}

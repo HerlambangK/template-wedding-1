@@ -47,23 +47,23 @@ export default function FooterSection({
 				</motion.p>
 
 				<motion.p
-					className='font-[family-name:var(--font-cormorant)] mt-8 text-sm'
-					style={{ color: 'var(--cover-text)', opacity: 0.3 }}
+					className='font-[family-name:var(--font-cormorant)] mt-8 text-xl'
+					style={{ color: 'var(--primary-light)', opacity: 0.65 }}
 					initial={{ y: 20, opacity: 0 }}
-					animate={isInView ? { y: 0, opacity: 0.3 } : {}}
+					animate={isInView ? { y: 0, opacity: 0.65 } : {}}
 					transition={{ delay: 0.4 }}
 				>
-					اَلْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِيْنَ
+					السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ وَبَرَكَاتُهُ
 				</motion.p>
 
 				<motion.p
-					className='font-[family-name:var(--font-cormorant)] mt-6 text-sm tracking-[0.3em] uppercase'
+					className='font-[family-name:var(--font-cormorant)] mt-2 text-base tracking-wider'
 					style={{ color: 'var(--primary-light)', opacity: 0.5 }}
 					initial={{ y: 20, opacity: 0 }}
 					animate={isInView ? { y: 0, opacity: 0.5 } : {}}
 					transition={{ delay: 0.5 }}
 				>
-					Wassalamualaikum Warahmatullahi Wabarakatuh
+					Wassalamu&rsquo;alaikum warahmatullahi wabarakatuh
 				</motion.p>
 
 				<motion.div

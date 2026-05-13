@@ -55,6 +55,9 @@ export default function GuestsClient({ invitation, guests: initialGuests }: Prop
   const [confirmDelete, setConfirmDelete] = useState<Guest | null>(null);
   const [confirmBulkWa, setConfirmBulkWa] = useState(false);
 
+  const formatDate = (date: string | null) =>
+    date ? new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "...";
+
   const getWaMessage = (guestName: string, invitationLink: string) => {
     return [
       `Assalamu'alaikum Warahmatullahi Wabarakatuh,`,
@@ -63,10 +66,10 @@ export default function GuestsClient({ invitation, guests: initialGuests }: Prop
       ``,
       `Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:`,
       ``,
-      `💍 *${invitation.groom_name || "..."}* & *${invitation.bride_name || "..."}*`,
+      `*${invitation.groom_name || "..."}* & *${invitation.bride_name || "..."}*`,
       ``,
-      `📅 : ${invitation.akad_date || invitation.resepsi_date || "..."}`,
-      `📍 : ${invitation.akad_venue || invitation.resepsi_venue || "..."}`,
+      `*Hari/Tanggal:* ${formatDate(invitation.akad_date || invitation.resepsi_date)}`,
+      `*Lokasi:* ${invitation.akad_venue || invitation.resepsi_venue || "..."}`,
       ``,
       `Link undangan lengkap:`,
       `${invitationLink}`,

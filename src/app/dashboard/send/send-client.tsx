@@ -75,6 +75,9 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
     }
   }, [allGuests, selectedId]);
 
+  const formatDate = (date: string | null) =>
+    date ? new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "...";
+
   const defaultTemplate = selectedInvitation
     ? [
         "Assalamu'alaikum Warahmatullahi Wabarakatuh,",
@@ -83,10 +86,10 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
         "",
         "Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:",
         "",
-        `💍 *${selectedInvitation.groom_name || "Mempelai Pria"}* & *${selectedInvitation.bride_name || "Mempelai Wanita"}*`,
+        `*${selectedInvitation.groom_name || "Mempelai Pria"}* & *${selectedInvitation.bride_name || "Mempelai Wanita"}*`,
         "",
-        `📅 : ${selectedInvitation.akad_date || selectedInvitation.resepsi_date || "..."}`,
-        `📍 : ${selectedInvitation.akad_venue || selectedInvitation.resepsi_venue || "..."}`,
+        `*Hari/Tanggal:* ${formatDate(selectedInvitation.akad_date || selectedInvitation.resepsi_date)}`,
+        `*Lokasi:* ${selectedInvitation.akad_venue || selectedInvitation.resepsi_venue || "..."}`,
         "",
         "Link undangan:",
         "{link_undangan}",

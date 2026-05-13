@@ -24,7 +24,7 @@ export function getWaMessage({
     ``,
     `Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:`,
     ``,
-    `🕊️ *${groomName}* & *${brideName}*`,
+    `💍 *${groomName}* & *${brideName}*`,
     ``,
     `📅 *Hari & Tanggal:* ${date}`,
     `📍 *Lokasi:* ${venue}`,

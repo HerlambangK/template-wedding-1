@@ -1,0 +1,16 @@
+{
+  "name": "Undangan Pernikahan Herlambang & Rela",
+  "short_name": "Herlambang & Rela",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FEFCF6",
+  "theme_color": "#B8860B",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

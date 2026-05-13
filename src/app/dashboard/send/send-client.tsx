@@ -83,7 +83,7 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
         "",
         "Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:",
         "",
-        `🕊️ *${selectedInvitation.groom_name || "Mempelai Pria"}* & *${selectedInvitation.bride_name || "Mempelai Wanita"}*`,
+        `💍 *${selectedInvitation.groom_name || "Mempelai Pria"}* & *${selectedInvitation.bride_name || "Mempelai Wanita"}*`,
         "",
         `📅 : ${selectedInvitation.akad_date || selectedInvitation.resepsi_date || "..."}`,
         `📍 : ${selectedInvitation.akad_venue || selectedInvitation.resepsi_venue || "..."}`,

@@ -13,22 +13,60 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: inv } = await supabase
     .from("invitations")
-    .select("title, groom_name, bride_name, akad_date")
+    .select("title, groom_name, bride_name, akad_date, resepsi_date, gallery, groom_photo, bride_photo, akad_venue")
     .eq("slug", slug)
     .eq("status", "published")
     .single();
 
   if (!inv) return { title: "Undangan Tidak Ditemukan" };
 
-  const title = `Undangan Pernikahan ${inv.groom_name || ""} & ${inv.bride_name || ""}`;
-  const description = `Anda diundang ke pernikahan ${inv.groom_name} & ${inv.bride_name}. ${
-    inv.akad_date ? new Date(inv.akad_date).toLocaleDateString("id-ID", { dateStyle: "long" }) : ""
+  const groom = inv.groom_name || "";
+  const bride = inv.bride_name || "";
+  const title = `Undangan Pernikahan ${groom} & ${bride}`;
+  const date = inv.akad_date || inv.resepsi_date || "";
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString("id-ID", { dateStyle: "long" })
+    : "";
+  const description = `Anda diundang ke pernikahan ${groom} & ${bride}. ${formattedDate}${
+    inv.akad_venue ? ` — ${inv.akad_venue}` : ""
   }`;
+
+  const ogImage =
+    inv.gallery && Array.isArray(inv.gallery) && inv.gallery.length > 0
+      ? inv.gallery[0].src
+      : inv.groom_photo || inv.bride_photo || "/images/gallery/1.jpg";
 
   return {
     title,
     description,
-    openGraph: { title, description },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/icon.svg", type: "image/svg+xml" },
+      ],
+      apple: [{ url: inv.groom_photo || "/images/groom.jpg" }],
+    },
+    openGraph: {
+      type: "website",
+      locale: "id_ID",
+      siteName: "Undangan Pernikahan",
+      title,
+      description,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${groom} & ${bride}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 

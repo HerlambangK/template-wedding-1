@@ -63,7 +63,7 @@ export default function GuestsClient({ invitation, guests: initialGuests }: Prop
       ``,
       `Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:`,
       ``,
-      `🕊️ *${invitation.groom_name || "..."}* & *${invitation.bride_name || "..."}*`,
+      `💍 *${invitation.groom_name || "..."}* & *${invitation.bride_name || "..."}*`,
       ``,
       `📅 : ${invitation.akad_date || invitation.resepsi_date || "..."}`,
       `📍 : ${invitation.akad_venue || invitation.resepsi_venue || "..."}`,

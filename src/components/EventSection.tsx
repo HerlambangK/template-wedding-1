@@ -56,7 +56,7 @@ export default function EventSection({ makanKeluarga }: EventSectionProps) {
           transition={{ duration: 0.8 }}
         >
           <h3 className="font-[family-name:var(--font-playfair)] text-xl sm:text-2xl font-semibold text-center italic" style={{ color: "var(--text)" }}>
-            Makan Keluarga
+            Intimate Family Celebration
           </h3>
 
           <div className="ornament-divider my-4 sm:my-6">

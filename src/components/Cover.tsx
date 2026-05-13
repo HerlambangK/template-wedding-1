@@ -126,15 +126,123 @@ export default function Cover({
           </motion.span>
         </motion.h1>
 
-        <motion.p
-          className="font-[family-name:var(--font-lora)] mt-6 text-sm"
-          style={{ color: "var(--text-light)" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
+        {/* Date with gold ribbon */}
+        <motion.div
+          className="relative mt-8 inline-flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.5, duration: 0.6, ease: "easeOut" }}
         >
-          {formattedDate}
-        </motion.p>
+          {/* Outer decorative line - left */}
+          <motion.div
+            className="absolute -left-14 sm:-left-20 top-1/2 -translate-y-1/2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.7, duration: 0.3 }}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[6px] sm:text-[8px]" style={{ color: "var(--primary-light)", opacity: 0.5 }}>✦</span>
+              <div className="h-px w-6 sm:w-10" style={{ background: `linear-gradient(to left, var(--primary-light), transparent)`, opacity: 0.5 }} />
+              <span className="text-[4px]" style={{ color: "var(--primary-light)", opacity: 0.3 }}>◆</span>
+            </div>
+          </motion.div>
+          {/* Outer decorative line - right */}
+          <motion.div
+            className="absolute -right-14 sm:-right-20 top-1/2 -translate-y-1/2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.7, duration: 0.3 }}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[4px]" style={{ color: "var(--primary-light)", opacity: 0.3 }}>◆</span>
+              <div className="h-px w-6 sm:w-10" style={{ background: `linear-gradient(to right, var(--primary-light), transparent)`, opacity: 0.5 }} />
+              <span className="text-[6px] sm:text-[8px]" style={{ color: "var(--primary-light)", opacity: 0.5 }}>✦</span>
+            </div>
+          </motion.div>
+
+          {/* Outer ribbon shadow/glow */}
+          <motion.div
+            className="absolute inset-0 rounded-sm blur-sm"
+            style={{
+              background: `linear-gradient(135deg, var(--primary-light), var(--primary))`,
+              opacity: 0.3,
+              transform: "scale(1.05)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.3 }}
+            transition={{ delay: 1.55, duration: 0.4 }}
+          />
+
+          {/* Ribbon left fold — points left */}
+          <motion.div
+            className="absolute -left-3 sm:-left-4 top-1/2 -translate-y-1/2 h-0 w-0 border-y-[14px] border-r-[10px] border-l-0 sm:border-y-[16px] sm:border-r-[12px]"
+            style={{
+              borderTopColor: "transparent",
+              borderBottomColor: "transparent",
+              borderRightColor: "color-mix(in srgb, var(--primary-dark) 80%, black)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.6, duration: 0.3 }}
+          />
+          {/* Ribbon right fold — points right */}
+          <motion.div
+            className="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2 h-0 w-0 border-y-[14px] border-l-[10px] border-r-0 sm:border-y-[16px] sm:border-l-[12px]"
+            style={{
+              borderTopColor: "transparent",
+              borderBottomColor: "transparent",
+              borderLeftColor: "color-mix(in srgb, var(--primary-dark) 80%, black)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.6, duration: 0.3 }}
+          />
+          {/* Inner ribbon body */}
+          <motion.div
+            className="relative px-4 sm:px-8 py-2 sm:py-3"
+            style={{
+              background: `linear-gradient(135deg, var(--primary-dark), var(--primary), var(--primary-light), var(--primary), var(--primary-dark))`,
+              borderRadius: "3px",
+              boxShadow: "0 3px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+            }}
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ delay: 1.5, duration: 0.5, ease: "easeOut" }}
+          >
+            {/* Subtle inner border */}
+            <div
+              className="absolute inset-[1px] rounded-[2px]"
+              style={{ border: `1px solid color-mix(in srgb, var(--primary-light) 40%, transparent)`, opacity: 0.4 }}
+            />
+            <p
+              className="relative font-[family-name:var(--font-cormorant)] text-[11px] sm:text-sm tracking-[0.3em] uppercase whitespace-nowrap font-semibold"
+              style={{ color: "#FFFFFF", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
+            >
+              {formattedDate}
+            </p>
+          </motion.div>
+          {/* Small sparkle decorations */}
+          <motion.span
+            className="absolute -top-2 -left-1 sm:-top-3 sm:-left-2 text-[8px] sm:text-[10px]"
+            style={{ color: "var(--primary-light)", opacity: 0.6 }}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 0.6, scale: 1 }}
+            transition={{ delay: 2.0, duration: 0.4 }}
+            whileHover={{ scale: 1.3, rotate: 20 }}
+          >
+            ✦
+          </motion.span>
+          <motion.span
+            className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 text-[6px] sm:text-[8px]"
+            style={{ color: "var(--primary-light)", opacity: 0.5 }}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 0.5, scale: 1 }}
+            transition={{ delay: 2.1, duration: 0.4 }}
+            whileHover={{ scale: 1.3, rotate: -15 }}
+          >
+            ✧
+          </motion.span>
+        </motion.div>
 
         <motion.div
           className="mt-10 sm:mt-14"

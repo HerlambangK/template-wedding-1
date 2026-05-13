@@ -15,6 +15,7 @@ import GallerySection from "@/components/GallerySection";
 import GiftSection from "@/components/GiftSection";
 import RSVPSection from "@/components/RSVPSection";
 import GuestBookSection from "@/components/GuestBookSection";
+import InteractiveMapSection from "@/components/InteractiveMapSection";
 import FooterSection from "@/components/FooterSection";
 import MusicPlayer from "@/components/MusicPlayer";
 import InfoPopup from "@/components/InfoPopup";
@@ -153,6 +154,8 @@ export default function PublicInvitation({ invitation, messages }: Props) {
           <CoupleSection groom={data.groom} bride={data.bride} />
 
           <EventSection makanKeluarga={data.resepsi} />
+
+          <InteractiveMapSection />
 
           {data.features.countdown && <CountdownSection date={data.resepsi.date} />}
 

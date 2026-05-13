@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
 import { Utensils } from 'lucide-react';
 import { config } from '@/config/wedding';
 
@@ -86,6 +86,33 @@ export default function InteractiveMapSection() {
 	const isInView = useInView(sectionRef, { once: true, margin: '-80px' });
 	const [L, setL] = useState<any>(null);
 	const [arrived, setArrived] = useState(false);
+	const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+	const galleryImages = [
+		{ src: '/images/nawasena/nawasena-ballroom.jpg', alt: 'Ballroom' },
+		{ src: '/images/nawasena/nawasena-resto-ballroom.jpg', alt: 'Resto Ballroom' },
+		{ src: '/images/nawasena/nawasena-ballrom.png', alt: 'Ballroom Interior' },
+	];
+
+	const openLightbox = useCallback((i: number) => setLightboxIdx(i), []);
+	const closeLightbox = useCallback(() => setLightboxIdx(null), []);
+	const prevImage = useCallback(() => {
+		setLightboxIdx(i => (i !== null ? (i - 1 + galleryImages.length) % galleryImages.length : null));
+	}, []);
+	const nextImage = useCallback(() => {
+		setLightboxIdx(i => (i !== null ? (i + 1) % galleryImages.length : null));
+	}, []);
+
+	useEffect(() => {
+		if (lightboxIdx === null) return;
+		const handler = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') closeLightbox();
+			if (e.key === 'ArrowLeft') prevImage();
+			if (e.key === 'ArrowRight') nextImage();
+		};
+		window.addEventListener('keydown', handler);
+		return () => window.removeEventListener('keydown', handler);
+	}, [lightboxIdx, closeLightbox, prevImage, nextImage]);
 
 	// Load Leaflet CDN
 	useEffect(() => {
@@ -311,12 +338,12 @@ export default function InteractiveMapSection() {
 	return (
 		<section
 			ref={sectionRef}
-			className='relative py-24'
+			className='relative py-16 sm:py-24'
 			style={{ backgroundColor: 'var(--bg)' }}
 		>
-			<div className='mx-auto max-w-6xl px-6'>
+			<div className='mx-auto max-w-6xl px-4 sm:px-6'>
 				<motion.div
-					className='mb-16 text-center'
+					className='mb-10 sm:mb-16 text-center'
 					initial={{ opacity: 0, y: 30 }}
 					animate={isInView ? { opacity: 1, y: 0 } : {}}
 					transition={{ duration: 0.8 }}
@@ -459,23 +486,34 @@ export default function InteractiveMapSection() {
 				</div>
 
 				{/* Mini Wedding Journey Timeline */}
-				<motion.div
-					className='mb-12'
-					initial={{ opacity: 0, y: 20 }}
-					animate={isInView ? { opacity: 1, y: 0 } : {}}
-					transition={{ duration: 0.6, delay: 0.6 }}
+				<div
+					className='mb-8 sm:mb-12 overflow-x-auto pb-1'
+					style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(200,169,107,0.3) transparent' }}
 				>
-					<div className='mx-auto flex max-w-2xl items-center justify-center gap-0'>
+					<motion.div
+						className='mx-auto flex w-max min-w-full items-center justify-center gap-0 px-4'
+						initial={{ opacity: 0 }}
+						whileInView={{ opacity: 1 }}
+						viewport={{ once: true, margin: '-50px' }}
+						transition={{ duration: 0.8, delay: 0.6 }}
+					>
 						{[
 							{ icon: '🏠', label: 'Berangkat', color: '#C8A96B' },
 							{ icon: '🚘', label: 'Perjalanan', color: '#D8B4A0' },
-							{ icon: '🕌', label: 'Tempat Menikah', color: '#C8A96B' },
-							{ icon: '🍽️', label: 'Makan Keluarga', color: '#D8B4A0' },
+							{ icon: '🕌', label: 'Menikah', color: '#C8A96B' },
+							{ icon: '🍽️', label: 'Family Time', color: '#D8B4A0' },
 						].map((step, i, arr) => (
-							<div key={i} className='flex items-center'>
+							<motion.div
+								key={i}
+								className='flex items-center'
+								initial={{ opacity: 0, x: -40 }}
+								whileInView={{ opacity: 1, x: 0 }}
+								viewport={{ once: true, margin: '-50px' }}
+								transition={{ duration: 0.8, delay: 0.8 + i * 0.2, ease: 'easeOut' }}
+							>
 								<div className='flex flex-col items-center'>
 									<div
-										className='flex h-10 w-10 items-center justify-center rounded-full text-lg'
+										className='flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-sm sm:text-lg'
 										style={{
 											backgroundColor: `color-mix(in srgb, ${step.color} 20%, transparent)`,
 											border: `2px solid ${step.color}`,
@@ -484,7 +522,7 @@ export default function InteractiveMapSection() {
 										{step.icon}
 									</div>
 									<span
-										className='mt-1.5 whitespace-nowrap text-[10px] font-medium tracking-wide'
+										className='mt-1 whitespace-nowrap text-[9px] sm:text-[10px] font-medium tracking-wide'
 										style={{ color: 'var(--text-light)' }}
 									>
 										{step.label}
@@ -492,17 +530,17 @@ export default function InteractiveMapSection() {
 								</div>
 								{i < arr.length - 1 && (
 									<div
-										className='mx-1 sm:mx-2 mt-[-1.2rem] h-px w-6 sm:w-12 lg:w-20'
+										className='mx-1 sm:mx-2 mt-[-1rem] sm:mt-[-1.2rem] h-px w-4 sm:w-12 lg:w-20'
 										style={{
 											background: `linear-gradient(to right, ${step.color}, ${arr[i + 1].color})`,
 											opacity: 0.4,
 										}}
 									/>
 								)}
-							</div>
+							</motion.div>
 						))}
-					</div>
-				</motion.div>
+					</motion.div>
+				</div>
 
 				{/* Ballroom Nawasena - Tasyakuran Keluarga */}
 				<motion.div
@@ -538,7 +576,124 @@ export default function InteractiveMapSection() {
 						Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun
 					</p>
 				</motion.div>
-			</div>
+				{/* Nawasena Garden Gallery — satu baris kecil */}
+				<motion.div
+					className='mt-8 sm:mt-10 text-center'
+					initial={{ opacity: 0, y: 20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: '-50px' }}
+					transition={{ duration: 0.8, delay: 0.4 }}
+				>
+					<p
+						className='font-[family-name:var(--font-cormorant)] text-xs tracking-[0.3em] uppercase mb-4'
+						style={{ color: 'var(--secondary)' }}
+					>
+						Nawasena Garden Resto & Ballroom
+					</p>
+					<div
+						className='mx-auto flex max-w-lg items-center justify-center gap-2 overflow-x-auto pb-1'
+						style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(200,169,107,0.3) transparent' }}
+					>
+						{galleryImages.map((img, i) => (
+							<motion.button
+								key={i}
+								onClick={() => openLightbox(i)}
+								initial={{ opacity: 0, x: -20 }}
+								whileInView={{ opacity: 1, x: 0 }}
+								viewport={{ once: true, margin: '-50px' }}
+								transition={{ duration: 0.6, delay: 0.6 + i * 0.12, ease: 'easeOut' }}
+								className='flex-shrink-0 overflow-hidden rounded-md shadow-sm cursor-pointer'
+							>
+								<img
+									src={img.src}
+									alt={img.alt}
+									className='h-16 w-24 sm:h-20 sm:w-28 object-cover transition-transform duration-300 hover:scale-105'
+									loading='lazy'
+								/>
+							</motion.button>
+						))}
+					</div>
+					<a
+						href='https://www.instagram.com/nawasena_garden/'
+						target='_blank'
+						rel='noopener noreferrer'
+						className='mt-3 inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-70'
+						style={{ color: 'var(--secondary)' }}
+					>
+						<svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='currentColor'>
+							<path d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z'/>
+						</svg>
+						<span>@nawasena_garden</span>
+					</a>
+				</motion.div>
+
+			{/* Lightbox */}
+			<AnimatePresence>
+				{lightboxIdx !== null && (
+					<motion.div
+						className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md'
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						onClick={closeLightbox}
+					>
+						{/* Close */}
+						<button
+							onClick={closeLightbox}
+							className='absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur transition-colors hover:bg-white/20 hover:text-white'
+						>
+							<svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
+								<path d='M18 6L6 18M6 6l12 12' />
+							</svg>
+						</button>
+
+						{/* Prev */}
+						<button
+							onClick={e => { e.stopPropagation(); prevImage(); }}
+							className='absolute left-2 sm:left-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur transition-colors hover:bg-white/20 hover:text-white'
+						>
+							<svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
+								<path d='M15 18l-6-6 6-6' />
+							</svg>
+						</button>
+
+						{/* Next */}
+						<button
+							onClick={e => { e.stopPropagation(); nextImage(); }}
+							className='absolute right-2 sm:right-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur transition-colors hover:bg-white/20 hover:text-white'
+						>
+							<svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
+								<path d='M9 18l6-6-6-6' />
+							</svg>
+						</button>
+
+						{/* Image */}
+						<motion.div
+							key={lightboxIdx}
+							className='flex max-h-[85vh] max-w-[92vw] items-center justify-center'
+							initial={{ opacity: 0, scale: 0.85 }}
+							animate={{ opacity: 1, scale: 1 }}
+							exit={{ opacity: 0, scale: 0.85 }}
+							transition={{ duration: 0.3, ease: 'easeOut' }}
+							onClick={e => e.stopPropagation()}
+						>
+							<img
+								src={galleryImages[lightboxIdx].src}
+								alt={galleryImages[lightboxIdx].alt}
+								className='max-h-[85vh] max-w-[92vw] rounded-lg object-contain shadow-2xl'
+							/>
+						</motion.div>
+
+						{/* Counter */}
+						<span
+							className='absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-xs font-medium tracking-wider text-white/80 backdrop-blur'
+						>
+							{lightboxIdx + 1} / {galleryImages.length}
+						</span>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</div>
 		</section>
 	);
 }

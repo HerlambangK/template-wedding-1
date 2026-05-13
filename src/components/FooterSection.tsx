@@ -53,7 +53,7 @@ export default function FooterSection({
 					animate={isInView ? { y: 0, opacity: 0.65 } : {}}
 					transition={{ delay: 0.4 }}
 				>
-					السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ وَبَرَكَاتُهُ
+					وَالسَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ وَبَرَكَاتُهُ
 				</motion.p>
 
 				<motion.p

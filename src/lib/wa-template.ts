@@ -6,6 +6,7 @@ export interface WaMessageParams {
   groomName?: string;
   brideName?: string;
   date?: string;
+  time?: string;
   venue?: string;
 }
 
@@ -15,7 +16,8 @@ export function getWaMessage({
   groomName = config.groom.fullName,
   brideName = config.bride.fullName,
   date = "29 Mei 2026",
-  venue = "NAWASENA GARDEN BALLROOM, Madiun",
+  time = "09:30 - 10:30 WIB",
+  venue = "Nawasena Garden Resto & Ballroom, Jl. H. Agus Salim No.90, Pandean, Kec. Manguharjo, Kota Madiun, Jawa Timur 63129",
 }: WaMessageParams): string {
   const message = [
     `Assalamu'alaikum Warahmatullahi Wabarakatuh,`,
@@ -27,6 +29,7 @@ export function getWaMessage({
     `*${groomName}* & *${brideName}*`,
     ``,
     `*Hari & Tanggal:* ${date}`,
+    `*Jam:* ${time}`,
     `*Lokasi:* ${venue}`,
     ``,
     `Link undangan lengkap:`,

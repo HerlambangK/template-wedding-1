@@ -90,7 +90,7 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
   const [qrImageData, setQrImageData] = useState<string | null>(null);
   const [blastingViaApi, setBlastingViaApi] = useState(false);
   const [blastApiError, setBlastApiError] = useState("");
-  const [blastDelay, setBlastDelay] = useState(1);
+  const [blastDelay, setBlastDelay] = useState(20);
   const [blastJitter, setBlastJitter] = useState(0);
   const [blastStep, setBlastStep] = useState(0);
 
@@ -148,21 +148,16 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
   const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   const selectedInvitation = invitations.find((i) => i.id === selectedId);
-  const [guests, setGuests] = useState<Guest[]>([]);
+  const [guests, setGuests] = useState<Guest[]>(() => allGuests.filter((g) => g.invitation_id === selectedId));
 
   useEffect(() => {
     const gs = allGuests.filter((g) => g.invitation_id === selectedId);
-    setGuests(gs);
     if (gs.length === 0 && selectedId && selectedInvitation) {
       fetchGuests();
+    } else if (gs.length > 0) {
+      setGuests(gs);
     }
   }, [selectedId]);
-
-  useEffect(() => {
-    if (allGuests.length > 0) {
-      setGuests(allGuests.filter((g) => g.invitation_id === selectedId));
-    }
-  }, [allGuests, selectedId]);
 
   const formatDate = (date: string | null) =>
     date ? new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "...";
@@ -290,13 +285,16 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
 
   const handleDeleteGuest = async () => {
     if (!confirmDelete) return;
+    console.log("[DELETE] Deleting guest:", confirmDelete.id, confirmDelete.name);
     const res = await fetch(`/api/guests/${confirmDelete.id}`, { method: "DELETE" });
+    console.log("[DELETE] Response:", res.status, res.statusText);
     if (res.ok) {
-      setGuests(guests.filter((g) => g.id !== confirmDelete.id));
+      setGuests((prev) => prev.filter((g) => g.id !== confirmDelete.id));
       setSelectedGuests((prev) => { const next = new Set(prev); next.delete(confirmDelete.id); return next; });
       toast.success("Tamu berhasil dihapus");
     } else {
-      toast.error("Gagal menghapus tamu");
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      toast.error(err.error || "Gagal menghapus tamu");
     }
     setConfirmDelete(null);
   };
@@ -381,19 +379,36 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
     setBlastingViaApi(true);
     setBlastApiError("");
     try {
-      const link = `${origin}/u/${selectedInvitation?.slug}`;
-      const contacts = withPhone.map((g) => {
-        const personalLink = `${link}?to=${encodeURIComponent(g.name)}`;
-        const message = waTemplate
-          .replace(/{nama_tamu}/g, g.name)
-          .replace(/{link_undangan}/g, personalLink);
-        return { name: g.name, phone: g.phone || "", message };
-      });
+      const baseUrl = `${origin}/u/${selectedInvitation?.slug}`;
+      const escapeCSV = (v: string) => v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v.replace(/"/g, '""')}"` : v;
 
-      console.log("[BLAST DEBUG] Sending personalized blast to", contacts.length, "contacts");
-      console.log("[BLAST DEBUG] First message:", contacts[0]?.message.slice(0, 100));
+      const csvRows = ["phone,name,link"];
+      for (const g of withPhone) {
+        const personalLink = `${baseUrl}?to=${encodeURIComponent(g.name)}`;
+        const cleanPhone = g.phone?.replace(/[^0-9]/g, "") || "";
+        const formattedPhone = cleanPhone.startsWith("0") ? "62" + cleanPhone.slice(1) : cleanPhone.startsWith("62") ? cleanPhone : "62" + cleanPhone;
+        csvRows.push(`${formattedPhone},${escapeCSV(g.name)},${escapeCSV(personalLink)}`);
+      }
+      const csvBlob = new Blob([csvRows.join("\n")], { type: "text/csv" });
 
-      await wablastHook.sendPersonalizedBlast(contacts, blastDelay, blastJitter);
+      const apiTemplate = waTemplate
+        .replace(/{nama_tamu}/g, "[name]")
+        .replace(/{link_undangan}/g, "[link]");
+
+      console.log("[BLAST] Recipients:", withPhone.length);
+      console.log("[BLAST] CSV header:", csvRows[0]);
+      console.log("[BLAST] Template:", apiTemplate.slice(0, 150));
+
+      await wablastHook.doBlast(
+        csvBlob,
+        apiTemplate,
+        selectedInvitation?.title || "Blast Undangan",
+        withPhone.length,
+        blastDelay,
+        blastJitter,
+      );
+      toast.success(`Campaign dimulai! ${withPhone.length} nomor diproses.`);
+      wablastHook.fetchCampaignList();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Gagal mengirim blast";
       setBlastApiError(msg);
@@ -409,23 +424,27 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
   };
 
   const [markingInvited, setMarkingInvited] = useState(false);
-  const handleMarkAsInvited = async () => {
-    const successPhones = wablastHook.campaignMessages
-      .filter((m) => m.status === "sent" || m.status === "success" || m.status === "delivered")
-      .map((m) => m.phone?.replace(/[^0-9]/g, "") || "")
-      .filter(Boolean);
-
-    if (successPhones.length === 0) {
-      toast.warning("Tidak ada pesan sukses");
+  const handleMarkAsInvited = async (auto = false) => {
+    const successMsgs = wablastHook.campaignMessages.filter((m) =>
+      m.status === "sent" || m.status === "success" || m.status === "delivered"
+    );
+    if (successMsgs.length === 0) {
+      if (!auto) toast.warning("Sync data dulu — belum ada pesan sukses");
       return;
     }
+
+    const sentPhones = successMsgs.map((m) => {
+      const cleaned = (m.phone || "").replace(/[^0-9]/g, "");
+      return cleaned.startsWith("0") ? "62" + cleaned.slice(1) : cleaned.startsWith("62") ? cleaned : "62" + cleaned;
+    }).filter(Boolean);
 
     let updated = 0;
     setMarkingInvited(true);
     for (const g of guests) {
       if (!g.phone) continue;
       const gPhone = g.phone.replace(/[^0-9]/g, "");
-      if (successPhones.includes(gPhone) && g.status !== "invited" && g.status !== "confirmed") {
+      const gNormalized = gPhone.startsWith("0") ? "62" + gPhone.slice(1) : gPhone.startsWith("62") ? gPhone : "62" + gPhone;
+      if (sentPhones.includes(gNormalized) && g.status !== "invited" && g.status !== "confirmed") {
         try {
           const res = await fetch(`/api/guests/${g.id}`, {
             method: "PATCH",
@@ -442,8 +461,12 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
     setMarkingInvited(false);
     if (updated > 0) {
       toast.success(`${updated} tamu ditandai "Diundang"`);
-    } else {
+    } else if (!auto) {
       toast.info("Semua tamu sudah ditandai atau tidak ditemukan");
+    }
+
+    if (updated > 0) {
+      try { await fetchGuests(); } catch { /* ignore */ }
     }
   };
 
@@ -810,7 +833,7 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                                 </button>
                                 {wablastHook.campaignMessages.length > 0 && (
                                   <button
-                                    onClick={handleMarkAsInvited}
+                                    onClick={() => handleMarkAsInvited(false)}
                                     disabled={markingInvited}
                                     className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
                                   >
@@ -834,27 +857,26 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                                   const msgTime = msg.timestamp
                                     ? new Date(msg.timestamp).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
                                     : "";
+                                  const isSuccess = msg.status === "sent" || msg.status === "success" || msg.status === "delivered";
+                                  const isFailed = msg.status === "failed" || msg.status === "error";
                                   return (
                                   <div
                                     key={i}
-                                    className={`flex items-center justify-between rounded-md px-2 py-1 text-xs ${
-                                      msg.status === "sent" || msg.status === "success"
-                                        ? "bg-green-50 text-green-700"
-                                        : msg.status === "failed" || msg.status === "error"
-                                        ? "bg-red-50 text-red-600"
-                                        : "bg-white text-gray-500"
-                                    }`}
+                                    className={`rounded-md px-2 py-1 text-xs ${isSuccess ? "bg-green-50" : isFailed ? "bg-red-50" : "bg-white"}`}
                                   >
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="truncate max-w-[100px] text-gray-700">{msg.phone || "-"}</span>
-                                        <span className={`font-medium ${msg.status === "sent" || msg.status === "success" ? "text-green-600" : msg.status === "failed" ? "text-red-500" : "text-gray-400"}`}>
-                                          {msg.status === "sent" || msg.status === "success" ? "Sent" : msg.status === "failed" || msg.status === "error" ? "Failed" : msg.status || "Pending"}
-                                        </span>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        {msg.name ? <span className="font-medium text-gray-700 truncate max-w-[80px]">{msg.name}</span> : null}
+                                        <span className="font-mono text-gray-400 text-[10px] truncate">{msg.phone || "-"}</span>
                                       </div>
-                                      {msg.reason && <div className="text-red-400 mt-0.5 text-[10px]">{msg.reason}</div>}
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`font-medium ${isSuccess ? "text-green-600" : isFailed ? "text-red-500" : "text-gray-400"}`}>
+                                          {isSuccess ? "✓ Sent" : isFailed ? "✗ Failed" : msg.status || "..."}
+                                        </span>
+                                        {msgTime && <span className="text-gray-400 text-[10px]">{msgTime}</span>}
+                                      </div>
                                     </div>
-                                    {msgTime && <span className="text-gray-400 ml-2 text-[10px]">{msgTime}</span>}
+                                    {msg.reason && <div className="text-red-400 mt-0.5 text-[10px] truncate">{msg.reason}</div>}
                                   </div>
                                 )})}
                               </div>
@@ -1036,22 +1058,15 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                               Preview Template Pesan
                             </div>
                             <div className="rounded-lg bg-white border p-3 text-xs whitespace-pre-wrap leading-relaxed text-gray-600 font-mono max-h-48 overflow-y-auto">
-                              {(() => {
-                                const sample = guests.find((g) => g.phone);
-                                if (!sample) return "⚠ Belum ada tamu dengan nomor HP";
-                                const personalLink = `${origin}/u/${selectedInvitation?.slug}?to=${encodeURIComponent(sample.name)}`;
-                                return (
-                                  <span>
-                                    <span className="text-amber-600 font-medium block mb-1">Preview untuk: {sample.name} ({sample.phone})</span>
-                                    {waTemplate
-                                      .replace(/{nama_tamu}/g, sample.name)
-                                      .replace(/{link_undangan}/g, personalLink)}
-                                  </span>
-                                );
-                              })()}
+                              {waTemplate
+                                .replace(/{nama_tamu}/g, "[name]")
+                                .replace(/{link_undangan}/g, "[link]")
+                              }
                             </div>
                             <p className="text-xs text-gray-400">
-                              Tiap kontak dapat pesan dengan <strong>nama + link personal</strong> (1 campaign per kontak, template sudah di-render)
+                              CSV: <code className="bg-amber-50 px-1 rounded">phone,name,link</code>
+                              {" · "}
+                              Variable: <code className="bg-amber-50 px-1 rounded">[name]</code> <code className="bg-amber-50 px-1 rounded">[link]</code>
                             </p>
                             <div className="flex gap-2">
                               <button onClick={() => setBlastStep(1)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors">Kembali</button>
@@ -1126,114 +1141,17 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                         )}
 
                         {wablastHook.deviceStatus === "connected" && blastStep === 5 && (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-xs font-medium text-blue-700">
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-xs font-bold">5</span>
-                              {wablastHook.blastProgress?.status === "done" ? "Pengiriman Selesai" : wablastHook.blastProgress?.status === "cancelled" ? "Pengiriman Dibatalkan" : "Proses Pengiriman"}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-green-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-xs font-bold">✓</span>
+                              Campaign dimulai! Pantau hasil di panel status di atas.
                             </div>
-
-                            {wablastHook.blastProgress && (
-                              <>
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-xs text-blue-600">
-                                    <span>{wablastHook.blastProgress.current} / {wablastHook.blastProgress.total}</span>
-                                    <span>{Math.round((wablastHook.blastProgress.current / wablastHook.blastProgress.total) * 100)}%</span>
-                                  </div>
-                                  <div className="h-1.5 w-full rounded-full bg-blue-100 overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full bg-blue-500 transition-all duration-300"
-                                      style={{ width: `${(wablastHook.blastProgress.current / wablastHook.blastProgress.total) * 100}%` }}
-                                    />
-                                  </div>
-                                </div>
-
-                                {wablastHook.blastProgress.status === "sending" && wablastHook.blastProgress.currentName && (
-                                  <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
-                                    <div className="text-xs">
-                                      <span className="text-blue-700">Mengirim ke </span>
-                                      <span className="font-medium text-blue-800">{wablastHook.blastProgress.currentName}</span>
-                                      <span className="text-blue-500"> — {wablastHook.blastProgress.currentPhone}</span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="space-y-1 max-h-40 overflow-y-auto">
-                                  {wablastHook.blastProgress.sent.map((s, i) => (
-                                    <div key={i} className="flex items-center gap-2 rounded-md bg-green-50 px-2 py-1 text-xs">
-                                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                      <span className="text-green-700 truncate">{s.name}</span>
-                                      <span className="text-green-500 font-mono text-[10px]">{s.phone}</span>
-                                      <span className="text-green-400 ml-auto text-[10px]">Terkirim</span>
-                                    </div>
-                                  ))}
-                                  {wablastHook.blastProgress.errors.map((e, i) => (
-                                    <div key={`err-${i}`} className="flex items-center gap-2 rounded-md bg-red-50 px-2 py-1 text-xs">
-                                      <span className="text-red-500 font-bold flex-shrink-0">✗</span>
-                                      <span className="text-red-700 truncate">{e.name}</span>
-                                      <span className="text-red-500 font-mono text-[10px]">{e.phone}</span>
-                                      <span className="text-red-400 ml-auto text-[10px] truncate max-w-[80px]" title={e.error}>{e.error}</span>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                <div className="flex gap-2 text-xs">
-                                  <span>Terkirim: <span className="font-medium text-green-600">{wablastHook.blastProgress.sent.length}</span></span>
-                                  <span>Gagal: <span className="font-medium text-red-500">{wablastHook.blastProgress.errors.length}</span></span>
-                                </div>
-
-                                {wablastHook.blastProgress.status === "sending" && (
-                                  <button
-                                    onClick={() => wablastHook.cancelBlast()}
-                                    className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors"
-                                  >
-                                    Batalkan
-                                  </button>
-                                )}
-
-                                {wablastHook.blastProgress.status === "done" && (
-                                  <>
-                                    {wablastHook.blastProgress.errors.length > 0 && (
-                                      <button
-                                        onClick={() => {
-                                          const origin = window.location.origin;
-                                          const slug = selectedInvitation?.slug || "";
-                                          wablastHook.blastProgress?.errors.forEach((e) => {
-                                            const link = `${origin}/u/${slug}?to=${encodeURIComponent(e.name)}`;
-                                            const msg = waTemplate
-                                              .replace(/{nama_tamu}/g, e.name)
-                                              .replace(/{link_undangan}/g, link);
-                                            const cleaned = e.phone.replace(/[^0-9]/g, "");
-                                            const prefix = cleaned.startsWith("0") ? "62" + cleaned.slice(1) : cleaned.startsWith("62") ? cleaned : "62" + cleaned;
-                                            setTimeout(() => {
-                                              window.open(`https://wa.me/${prefix}?text=${encodeURIComponent(msg)}`, "_blank");
-                                            }, 1000);
-                                          });
-                                          toast.success(`Membuka ${wablastHook.blastProgress?.errors.length} chat WA manual`);
-                                        }}
-                                        className="w-full rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 transition-colors"
-                                      >
-                                        Buka WA Manual ({wablastHook.blastProgress.errors.length} gagal)
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => { setBlastStep(0); }}
-                                      className="w-full rounded-lg bg-green-500 px-3 py-2 text-xs font-medium text-white hover:bg-green-600 transition-colors"
-                                    >
-                                      Selesai — Kembali ke Awal
-                                    </button>
-                                  </>
-                                )}
-                                {wablastHook.blastProgress.status === "cancelled" && (
-                                  <button
-                                    onClick={() => { setBlastStep(0); }}
-                                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
-                                  >
-                                    Kembali ke Awal
-                                  </button>
-                                )}
-                              </>
-                            )}
+                            <button
+                              onClick={() => setBlastStep(0)}
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                            >
+                              Kembali ke Awal
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1414,7 +1332,7 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                                     className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors" title="Edit">
                                     <Edit3 className="h-3.5 w-3.5" />
                                   </button>
-                                  <button onClick={() => setConfirmDelete(guest)}
+                                  <button onClick={() => { console.log("[DELETE] Button clicked, guest:", guest.id, guest.name); setConfirmDelete(guest); }}
                                     className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hapus">
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>

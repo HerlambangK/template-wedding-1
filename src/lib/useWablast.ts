@@ -223,13 +223,15 @@ export function useWablast() {
   const disconnectDevice = async () => {
     try {
       await wablast.logoutDevice();
-      setDeviceStatus("disconnected");
-      setDevicePhone(null);
-      setQrData(null);
-      setPairingCode(null);
     } catch {
       // ignore
     }
+    setDeviceStatus("disconnected");
+    setDevicePhone(null);
+    setQrData(null);
+    setPairingCode(null);
+    setCampaign(null);
+    setCampaignMessages([]);
   };
 
   const doBlast = async (
@@ -237,7 +239,7 @@ export function useWablast() {
     templateText: string,
     campaignName: string,
     totalRecipients: number,
-    delaySeconds = 1,
+    delaySeconds = 20,
     jitterSeconds = 0,
   ): Promise<CampaignProgress> => {
     setCampaignMessages([]);
@@ -328,7 +330,9 @@ export function useWablast() {
       console.log(`[BLAST] [${idx}/${total}] Template (first 150 chars):`, c.message.slice(0, 150));
 
       try {
-        const csvContent = `phone,name\n"${c.phone}","${c.name.replace(/"/g, '""')}"`;
+        const phone = c.phone.replace(/[^0-9]/g, "");
+        const formattedPhone = phone.startsWith("0") ? "62" + phone.slice(1) : phone.startsWith("62") ? phone : "62" + phone;
+        const csvContent = `phone,name\n"${formattedPhone}","${c.name.replace(/"/g, '""')}"`;
         const csvFile = new File([csvContent], `tamu.csv`, { type: "text/csv" });
         console.log(`[BLAST] [${idx}/${total}] Uploading dataset...`);
         const dataset = await wablast.uploadDataset(csvFile, `blast-${c.name.replace(/\s/g, "-")}`);
@@ -350,7 +354,7 @@ export function useWablast() {
 
         setBlastProgress((prev) => prev ? {
           ...prev,
-          sent: [...prev.sent, { name: c.name, phone: c.phone, campaignId }],
+          sent: [...prev.sent, { name: c.name, phone: formattedPhone, campaignId }],
         } : null);
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : "Unknown error";
@@ -388,8 +392,19 @@ export function useWablast() {
     if (!campaignId) return null;
     setIsSyncing(true);
     try {
-      const raw = await wablast.getCampaignMessages(campaignId, 500);
+      let datasetRows: Record<string, unknown>[] = [];
+      try {
+        const campDetail = await wablast.getCampaign(campaignId);
+        const d = campDetail as Record<string, unknown>;
+        const datasetId = (d.dataset_id || d.datasetId || "") as string;
+        if (datasetId) {
+          const preview = await wablast.previewDataset(datasetId, 500);
+          const p = preview as Record<string, unknown>;
+          datasetRows = (Array.isArray(p) ? p : Array.isArray(p.rows) ? p.rows : Array.isArray(p.data) ? p.data : []) as Record<string, unknown>[];
+        }
+      } catch { /* dataset preview optional */ }
 
+      const raw = await wablast.getCampaignMessages(campaignId, 500);
       let msgArr: Record<string, unknown>[] = [];
       if (Array.isArray(raw)) {
         msgArr = raw as Record<string, unknown>[];
@@ -398,14 +413,17 @@ export function useWablast() {
         msgArr = (Array.isArray(r.rows) ? r.rows : Array.isArray(r.data) ? r.data : Array.isArray(r.messages) ? r.messages : []) as Record<string, unknown>[];
       }
 
-      const parsed: CampaignMessage[] = msgArr.map((m) => ({
-        phone: (m.phone || m.to || m.number || "") as string,
-        name: (m.name || m.contact_name || "") as string,
-        status: (m.send_status || m.status || m.state || "") as string,
-        message: (m.rendered_message || m.message || m.text || "") as string,
-        reason: (m.error_message || m.reason || m.error || "") as string,
-        timestamp: (m.sent_at || m.created_at || m.timestamp || "") as string,
-      }));
+      const parsed: CampaignMessage[] = msgArr.map((m, i) => {
+        const dsRow = datasetRows[i] as Record<string, unknown> | undefined;
+        return {
+          phone: (dsRow?.phone || dsRow?.Phone || m.phone || m.to || m.number || "") as string,
+          name: (dsRow?.name || dsRow?.Name || m.name || m.contact_name || "") as string,
+          status: (m.send_status || m.status || m.state || "") as string,
+          message: (m.rendered_message || m.message || m.text || "") as string,
+          reason: (m.error_message || m.reason || m.error || "") as string,
+          timestamp: (m.sent_at || m.created_at || m.timestamp || "") as string,
+        };
+      });
 
       const successCount = parsed.filter((m) => m.status === "sent" || m.status === "success" || m.status === "delivered").length;
       const failedCount = parsed.filter((m) => m.status === "failed" || m.status === "error" || m.status === "rejected").length;

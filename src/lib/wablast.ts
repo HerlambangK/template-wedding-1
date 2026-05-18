@@ -125,7 +125,7 @@ class WablastClient {
   async logoutDevice() {
     return this.request("/wa/device/logout", {
       method: "POST",
-      headers: this.headers(),
+      headers: this.headers(false),
     });
   }
 

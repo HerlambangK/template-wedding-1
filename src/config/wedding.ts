@@ -258,21 +258,9 @@ export const config = {
 	gifts: [
 		{
 			type: 'bank',
-			bankName: '(Isi Nama Bank)',
-			accountNumber: '(Isi Nomor Rekening)',
-			accountHolder: 'Herlambang Kuswicaksonojati',
-		},
-		{
-			type: 'bank',
-			bankName: '(Isi Nama Bank)',
-			accountNumber: '(Isi Nomor Rekening)',
-			accountHolder: 'Rela Hastuti',
-		},
-		{
-			type: 'qris',
-			label: 'QRIS',
-			// qrisImage: '/images/qris.jpg',
-			qrisImage: '',
+			bankName: 'BCA',
+			accountNumber: '8950648229',
+			accountHolder: 'Herlambang',
 		},
 	],
 

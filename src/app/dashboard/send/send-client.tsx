@@ -18,10 +18,20 @@ import {
   ExternalLink,
   Smartphone,
   Plus,
+  Zap,
+  QrCode,
+  KeyRound,
+  Wifi,
+  WifiOff,
+  Loader2,
+  Eye,
+  EyeOff,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import GuestFormModal from "@/components/GuestFormModal";
+import { useWablast } from "@/lib/useWablast";
 
 interface Props {
   invitations: Invitation[];
@@ -35,6 +45,30 @@ function getWaUrl(phone: string, message: string): string {
   return `https://wa.me/${prefix}?text=${encodeURIComponent(message)}`;
 }
 
+function getQrImageSrc(data: string): string {
+  if (data.startsWith("data:image/")) return data;
+  if (data.startsWith("http://") || data.startsWith("https://")) return data;
+  if (/^[A-Za-z0-9+/=]+$/.test(data) && data.length > 100) return `data:image/png;base64,${data}`;
+  if (data.startsWith("iVBOR") || data.startsWith("/9j/") || data.startsWith("R0lGOD")) return `data:image/png;base64,${data}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
+}
+
+function QrImage({ data }: { data: string }) {
+  const [fallback, setFallback] = useState(false);
+  const src = fallback
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`
+    : getQrImageSrc(data);
+
+  return (
+    <img
+      src={src}
+      alt="QR Code"
+      className="mx-auto max-w-[200px] rounded-lg bg-white p-2"
+      onError={() => { if (!fallback) setFallback(true); }}
+    />
+  );
+}
+
 export default function SendClient({ invitations, allGuests, defaultInvitationId }: Props) {
   const router = useRouter();
   const toast = useToast();
@@ -42,6 +76,61 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  const wablastHook = useWablast();
+  const [showApiPanel, setShowApiPanel] = useState(false);
+  const [apiEmail, setApiEmail] = useState("");
+  const [apiPassword, setApiPassword] = useState("");
+  const [showApiPassword, setShowApiPassword] = useState(false);
+  const [pairingPhone, setPairingPhone] = useState("");
+  const [showPairingCodeResult, setShowPairingCodeResult] = useState(false);
+  const [pairingCodeResult, setPairingCodeResult] = useState<string | null>(null);
+  const [pairingCodeError, setPairingCodeError] = useState("");
+  const [showQrImage, setShowQrImage] = useState(false);
+  const [qrImageData, setQrImageData] = useState<string | null>(null);
+  const [blastingViaApi, setBlastingViaApi] = useState(false);
+  const [blastApiError, setBlastApiError] = useState("");
+  const [blastDelay, setBlastDelay] = useState(1);
+  const [blastJitter, setBlastJitter] = useState(0);
+  const [blastStep, setBlastStep] = useState(0);
+
+  useEffect(() => {
+    if (showApiPanel && (showQrImage || showPairingCodeResult)) {
+      wablastHook.startPolling();
+    } else {
+      wablastHook.stopPolling();
+    }
+  }, [showApiPanel, showQrImage, showPairingCodeResult, wablastHook.startPolling, wablastHook.stopPolling]);
+
+  useEffect(() => {
+    if (showApiPanel && wablastHook.isLoggedIn) {
+      wablastHook.fetchCampaignList();
+    }
+  }, [showApiPanel, wablastHook.isLoggedIn]);
+
+  const [countdown, setCountdown] = useState("");
+
+  useEffect(() => {
+    const c = wablastHook.campaign;
+    if (!c?.startTime || c.status !== "running" || !c.total) {
+      setCountdown("");
+      return;
+    }
+    const avgDelay = (c.delaySeconds || 1) + ((c.jitterSeconds || 0) / 2);
+    const estimatedMs = c.total * avgDelay * 1000;
+    const endTime = c.startTime + estimatedMs;
+
+    const tick = () => {
+      const remaining = Math.max(0, endTime - Date.now());
+      if (remaining <= 0) { setCountdown("Estimasi selesai"); return; }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      setCountdown(`~${mins}m ${secs}d lagi`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [wablastHook.campaign?.startTime, wablastHook.campaign?.status, wablastHook.campaign?.total]);
 
   const [selectedId, setSelectedId] = useState<string>(defaultInvitationId || invitations[0]?.id || "");
   const [search, setSearch] = useState("");
@@ -275,6 +364,89 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
     toast.success("File CSV berhasil di-download");
   };
 
+  const handleBlastViaApi = async () => {
+    if (!wablastHook.isLoggedIn) {
+      toast.warning("Login ke App Blast terlebih dahulu");
+      return;
+    }
+    if (wablastHook.deviceStatus !== "connected") {
+      toast.warning("Sambungkan perangkat WA terlebih dahulu");
+      return;
+    }
+    const withPhone = guests.filter((g) => g.phone);
+    if (withPhone.length === 0) {
+      toast.warning("Tidak ada tamu dengan nomor HP");
+      return;
+    }
+    setBlastingViaApi(true);
+    setBlastApiError("");
+    try {
+      const link = `${origin}/u/${selectedInvitation?.slug}`;
+      const contacts = withPhone.map((g) => {
+        const personalLink = `${link}?to=${encodeURIComponent(g.name)}`;
+        const message = waTemplate
+          .replace(/{nama_tamu}/g, g.name)
+          .replace(/{link_undangan}/g, personalLink);
+        return { name: g.name, phone: g.phone || "", message };
+      });
+
+      console.log("[BLAST DEBUG] Sending personalized blast to", contacts.length, "contacts");
+      console.log("[BLAST DEBUG] First message:", contacts[0]?.message.slice(0, 100));
+
+      await wablastHook.sendPersonalizedBlast(contacts, blastDelay, blastJitter);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Gagal mengirim blast";
+      setBlastApiError(msg);
+      toast.error(msg);
+      setBlastStep(4);
+    }
+    setBlastingViaApi(false);
+  };
+
+  const handleCopyPairingCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Kode pairing disalin!");
+  };
+
+  const [markingInvited, setMarkingInvited] = useState(false);
+  const handleMarkAsInvited = async () => {
+    const successPhones = wablastHook.campaignMessages
+      .filter((m) => m.status === "sent" || m.status === "success" || m.status === "delivered")
+      .map((m) => m.phone?.replace(/[^0-9]/g, "") || "")
+      .filter(Boolean);
+
+    if (successPhones.length === 0) {
+      toast.warning("Tidak ada pesan sukses");
+      return;
+    }
+
+    let updated = 0;
+    setMarkingInvited(true);
+    for (const g of guests) {
+      if (!g.phone) continue;
+      const gPhone = g.phone.replace(/[^0-9]/g, "");
+      if (successPhones.includes(gPhone) && g.status !== "invited" && g.status !== "confirmed") {
+        try {
+          const res = await fetch(`/api/guests/${g.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "invited" }),
+          });
+          if (res.ok) {
+            setGuests((prev) => prev.map((gg) => gg.id === g.id ? { ...gg, status: "invited" as Guest["status"] } : gg));
+            updated++;
+          }
+        } catch { /* skip */ }
+      }
+    }
+    setMarkingInvited(false);
+    if (updated > 0) {
+      toast.success(`${updated} tamu ditandai "Diundang"`);
+    } else {
+      toast.info("Semua tamu sudah ditandai atau tidak ditemukan");
+    }
+  };
+
   const updateGuestStatus = async (guest: Guest, status: Guest["status"]) => {
     const res = await fetch(`/api/guests/${guest.id}`, {
       method: "PATCH",
@@ -350,6 +522,726 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                   Reset template
                 </button>
               </div>
+
+              {/* WA Blast API Panel */}
+              <div className="rounded-xl border bg-white p-4 sm:p-5 shadow-sm">
+                <button
+                  onClick={() => setShowApiPanel(!showApiPanel)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <h2 className="text-sm font-semibold text-gray-700">WA Blast API</h2>
+                    {wablastHook.isLoggedIn && wablastHook.deviceStatus === "connected" && (
+                      <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600">
+                        <Wifi className="h-3 w-3" /> Online
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400">{showApiPanel ? "Sembunyikan" : "Tampilkan"}</span>
+                </button>
+
+                {showApiPanel && (
+                  <div className="mt-4 space-y-4">
+                    {!wablastHook.isLoggedIn ? (
+                      <div className="space-y-3">
+                        <p className="text-xs text-gray-500">
+                          Login ke App Blast untuk mengirim undangan via API langsung tanpa membuka tab WA satu per satu.
+                        </p>
+                        {wablastHook.loginError && (
+                          <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600">
+                            {wablastHook.loginError}
+                          </div>
+                        )}
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500">Email</label>
+                          <input
+                            type="email"
+                            value={apiEmail}
+                            onChange={(e) => setApiEmail(e.target.value)}
+                            placeholder="email@example.com"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500">Password</label>
+                          <div className="relative">
+                            <input
+                              type={showApiPassword ? "text" : "password"}
+                              value={apiPassword}
+                              onChange={(e) => setApiPassword(e.target.value)}
+                              placeholder="Password"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 pr-10 text-xs outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
+                              onKeyDown={(e) => { if (e.key === "Enter") wablastHook.login(apiEmail, apiPassword); }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowApiPassword(!showApiPassword)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                              {showApiPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => wablastHook.login(apiEmail, apiPassword)}
+                          disabled={wablastHook.isLoggingIn || !apiEmail || !apiPassword}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                        >
+                          {wablastHook.isLoggingIn ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Zap className="h-3.5 w-3.5" />
+                          )}
+                          {wablastHook.isLoggingIn ? "Login..." : "Login ke App Blast"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                          <span className="text-xs text-gray-600 truncate max-w-[200px]">
+                            {wablastHook.user?.email || "Logged in"}
+                          </span>
+                          <button
+                            onClick={() => wablastHook.logout()}
+                            className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            Logout
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            {wablastHook.deviceStatus === "connected" ? (
+                              <Wifi className="h-4 w-4 text-green-500" />
+                            ) : wablastHook.deviceStatus === "connecting" ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                            ) : (
+                              <WifiOff className="h-4 w-4 text-gray-400" />
+                            )}
+                            <div>
+                              <span className="text-xs font-medium text-gray-700">
+                                {wablastHook.deviceStatus === "connected"
+                                  ? `Terhubung${wablastHook.devicePhone ? ` (${wablastHook.devicePhone})` : ""}`
+                                  : wablastHook.deviceStatus === "connecting"
+                                  ? "Menghubungkan..."
+                                  : "Tidak terhubung"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => wablastHook.checkDeviceStatus()}
+                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 transition-colors"
+                              title="Refresh status"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </button>
+                            {wablastHook.deviceStatus === "connected" ? (
+                              <button
+                                onClick={() => wablastHook.disconnectDevice()}
+                                className="rounded-lg px-2 py-1 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                Putuskan
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => wablastHook.connectDevice()}
+                                disabled={wablastHook.deviceStatus === "connecting"}
+                                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                              >
+                                Sambungkan
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {wablastHook.deviceStatus !== "connected" && (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    setShowQrImage(true);
+                                    setQrImageData(null);
+                                    await wablastHook.connectDevice();
+                                    const qr = await wablastHook.fetchQr();
+                                    if (qr) setQrImageData(qr);
+                                  } catch (e) {
+                                    toast.error("Gagal mendapatkan QR");
+                                  }
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                              >
+                                <QrCode className="h-3.5 w-3.5" /> Scan QR
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setShowPairingCodeResult(true);
+                                  setPairingCodeResult(null);
+                                  setPairingCodeError("");
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                              >
+                                <KeyRound className="h-3.5 w-3.5" /> Kode Pairing
+                              </button>
+                            </div>
+
+                            {showPairingCodeResult && (
+                              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                                <p className="text-xs text-amber-700">Masukkan nomor HP untuk mendapatkan kode pairing:</p>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={pairingPhone}
+                                    onChange={(e) => setPairingPhone(e.target.value)}
+                                    placeholder="081234567890"
+                                    className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs outline-none focus:border-amber-400"
+                                  />
+                                  <button
+                                    onClick={async () => {
+                                      setPairingCodeError("");
+                                      try {
+                                        const code = await wablastHook.fetchPairingCode(pairingPhone);
+                                        if (code) setPairingCodeResult(code);
+                                      } catch (e) {
+                                        setPairingCodeError(e instanceof Error ? e.message : "Gagal");
+                                      }
+                                    }}
+                                    disabled={wablastHook.isGettingPairingCode || !pairingPhone}
+                                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                  >
+                                    {wablastHook.isGettingPairingCode ? "..." : "Dapatkan"}
+                                  </button>
+                                </div>
+                                {pairingCodeError && (
+                                  <p className="text-xs text-red-500">{pairingCodeError}</p>
+                                )}
+                                {pairingCodeResult && (
+                                  <div className="flex items-center gap-2 rounded-lg bg-white border px-3 py-2">
+                                    <code className="flex-1 text-sm font-bold text-amber-700 tracking-wider">{pairingCodeResult}</code>
+                                    <button
+                                      onClick={() => handleCopyPairingCode(pairingCodeResult)}
+                                      className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 transition-colors"
+                                    >
+                                      <Copy className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {showQrImage && (
+                              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-center">
+                                <p className="text-xs text-amber-700">Scan QR code dengan WhatsApp:</p>
+                                {qrImageData ? (
+                                  <QrImage data={qrImageData} />
+                                ) : (
+                                  <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-amber-400" />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() => setShowQrImage(false)}
+                                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                  Tutup
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {wablastHook.campaign && (
+                          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-3">
+                            <div className="flex items-center gap-2">
+                              {wablastHook.campaign.status === "running" ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                              ) : wablastHook.campaign.status === "completed" ? (
+                                <Check className="h-3.5 w-3.5 text-green-500" />
+                              ) : (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                              )}
+                              <span className="text-xs font-medium text-blue-700">
+                                {wablastHook.campaign.message}
+                              </span>
+                            </div>
+
+                            {countdown && (
+                              <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                {countdown}
+                                <span className="text-blue-400">(delay: {wablastHook.campaign.delaySeconds ?? "-"}s + jitter: {wablastHook.campaign.jitterSeconds ?? "-"}s)</span>
+                              </div>
+                            )}
+
+                            {(wablastHook.campaign.status === "running" || wablastHook.campaign.status === "completed") && (
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-blue-600">
+                                  <span>Terkirim: {wablastHook.campaign.sent ?? 0} / {wablastHook.campaign.total ?? 0}</span>
+                                  <span>
+                                    Sukses: <span className="text-green-600 font-medium">{wablastHook.campaign.successCount ?? 0}</span>
+                                    {" · "}
+                                    Gagal: <span className="text-red-500 font-medium">{wablastHook.campaign.failedCount ?? 0}</span>
+                                  </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-blue-100 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                                    style={{ width: `${wablastHook.campaign.total ? Math.min(100, ((wablastHook.campaign.sent ?? 0) / wablastHook.campaign.total) * 100) : 0}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {wablastHook.campaign.campaignId && (
+                              <>
+                                <button
+                                  onClick={() => wablastHook.refreshCurrentCampaign()}
+                                  disabled={wablastHook.isSyncing}
+                                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                                >
+                                  {wablastHook.isSyncing ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-3 w-3" />
+                                  )}
+                                  {wablastHook.isSyncing ? "Syncing..." : "Sync Data Pesan"}
+                                </button>
+                                {wablastHook.campaignMessages.length > 0 && (
+                                  <button
+                                    onClick={handleMarkAsInvited}
+                                    disabled={markingInvited}
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
+                                  >
+                                    {markingInvited ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Users className="h-3 w-3" />
+                                    )}
+                                    {markingInvited ? "Menandai..." : "Tandai Diundang"}
+                                  </button>
+                                )}
+                              </>
+                            )}
+
+                            {wablastHook.campaignMessages.length > 0 && (
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
+                                <p className="text-xs text-blue-600 font-medium">
+                                  Detail Pengiriman ({wablastHook.campaignMessages.length}):
+                                </p>
+                                {wablastHook.campaignMessages.map((msg, i) => {
+                                  const msgTime = msg.timestamp
+                                    ? new Date(msg.timestamp).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                                    : "";
+                                  return (
+                                  <div
+                                    key={i}
+                                    className={`flex items-center justify-between rounded-md px-2 py-1 text-xs ${
+                                      msg.status === "sent" || msg.status === "success"
+                                        ? "bg-green-50 text-green-700"
+                                        : msg.status === "failed" || msg.status === "error"
+                                        ? "bg-red-50 text-red-600"
+                                        : "bg-white text-gray-500"
+                                    }`}
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="truncate max-w-[100px] text-gray-700">{msg.phone || "-"}</span>
+                                        <span className={`font-medium ${msg.status === "sent" || msg.status === "success" ? "text-green-600" : msg.status === "failed" ? "text-red-500" : "text-gray-400"}`}>
+                                          {msg.status === "sent" || msg.status === "success" ? "Sent" : msg.status === "failed" || msg.status === "error" ? "Failed" : msg.status || "Pending"}
+                                        </span>
+                                      </div>
+                                      {msg.reason && <div className="text-red-400 mt-0.5 text-[10px]">{msg.reason}</div>}
+                                    </div>
+                                    {msgTime && <span className="text-gray-400 ml-2 text-[10px]">{msgTime}</span>}
+                                  </div>
+                                )})}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {blastApiError && (
+                          <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600">
+                            {blastApiError}
+                          </div>
+                        )}
+
+                        {wablastHook.isLoggedIn && (
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => { wablastHook.fetchCampaignList(); }}
+                              disabled={wablastHook.isFetchingCampaigns}
+                              className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                {wablastHook.isFetchingCampaigns ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3" />
+                                )}
+                                Daftar Campaign
+                              </span>
+                              {wablastHook.campaignList.length > 0 && (
+                                <span className="text-gray-400">{wablastHook.campaignList.length}</span>
+                              )}
+                            </button>
+                            {wablastHook.campaignList.length > 0 && (
+                              <div className="space-y-1 max-h-48 overflow-y-auto">
+                                {wablastHook.campaignList.slice(0, 5).map((c, i) => {
+                                  const cid = (c.id || c.campaign_id || "") as string;
+                                  const cname = (c.name || c.campaign_name || "Campaign") as string;
+                                  const cstatus = (c.status || "draft") as string;
+                                  const ctotal = (c.total_count || c.total || 0) as number;
+                                  const cdate = (c.created_at || c.started_at || c.date || "") as string;
+                                  const formattedDate = cdate
+                                    ? new Date(cdate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) + " " +
+                                      new Date(cdate).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+                                    : "";
+                                  return (
+                                    <details key={i} className="group rounded-lg border bg-white">
+                                      <summary
+                                        className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs list-none"
+                                        onClick={() => { if (cid) wablastHook.syncCampaignMessages(cid); }}
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <div className="truncate font-medium text-gray-700">{cname}</div>
+                                          <div className="flex items-center gap-2 text-gray-400 mt-0.5">
+                                            <span className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                              cstatus === "running" ? "bg-blue-500 animate-pulse" :
+                                              cstatus === "completed" ? "bg-green-500" : "bg-gray-300"
+                                            }`} />
+                                            {cstatus} · {ctotal} kontak
+                                            {formattedDate && <span>· {formattedDate}</span>}
+                                          </div>
+                                        </div>
+                                        <span className="ml-2 text-xs text-gray-400 group-open:hidden">Lihat ▸</span>
+                                        <span className="ml-2 text-xs text-gray-400 hidden group-open:inline">Tutup ▾</span>
+                                      </summary>
+                                      <div className="border-t px-3 py-2 space-y-1 max-h-32 overflow-y-auto">
+                                        {(() => {
+                                          const msgs = wablastHook.campaignMessagesMap[cid];
+                                          if (!msgs || msgs.length === 0) {
+                                            return (
+                                              <div className="flex items-center justify-center py-4 text-xs text-gray-400">
+                                                <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                                                Memuat data pesan...
+                                              </div>
+                                            );
+                                          }
+                                          return msgs.map((msg, j) => {
+                                            const msgDate = msg.timestamp
+                                              ? new Date(msg.timestamp).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                                              : "";
+                                            return (
+                                              <div key={j} className={`flex items-center justify-between rounded-md px-2 py-1 text-xs ${
+                                                msg.status === "sent" || msg.status === "success" ? "bg-green-50 text-green-700" :
+                                                msg.status === "failed" || msg.status === "error" ? "bg-red-50 text-red-600" :
+                                                "bg-white text-gray-500"
+                                              }`}>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="truncate max-w-[100px] text-gray-700">{msg.phone || "-"}</span>
+                                                    <span className={`font-medium ${msg.status === "sent" || msg.status === "success" ? "text-green-600" : msg.status === "failed" ? "text-red-500" : "text-gray-400"}`}>
+                                                      {msg.status === "sent" || msg.status === "success" ? "Sent" : msg.status === "failed" || msg.status === "error" ? "Failed" : msg.status || "-"}
+                                                    </span>
+                                                  </div>
+                                                  {msg.reason && <div className="text-red-400 mt-0.5 text-[10px]">{msg.reason}</div>}
+                                                </div>
+                                                {msgDate && <span className="text-gray-400 ml-2 text-[10px]">{msgDate}</span>}
+                                              </div>
+                                            );
+                                          });
+                                        })()}
+                                      </div>
+                                    </details>
+                                  );
+                                })}
+                                {wablastHook.campaignList.length > 5 && (
+                                  <p className="text-center text-xs text-gray-400 py-1">
+                                    + {wablastHook.campaignList.length - 5} campaign lainnya (scroll)
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 0 && (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="mb-1 block text-xs text-gray-500">Delay (detik)</label>
+                                <input
+                                  type="number" min={0} max={60}
+                                  value={blastDelay}
+                                  onChange={(e) => setBlastDelay(Number(e.target.value) || 0)}
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-amber-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs text-gray-500">Jitter (detik)</label>
+                                <input
+                                  type="number" min={0} max={30}
+                                  value={blastJitter}
+                                  onChange={(e) => setBlastJitter(Number(e.target.value) || 0)}
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-amber-400"
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => { if (guests.filter((g) => g.phone).length > 0) setBlastStep(1); else toast.warning("Tidak ada tamu dengan nomor HP"); }}
+                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-white hover:from-amber-600 hover:to-orange-600 active:scale-[0.98] shadow-sm shadow-amber-200 transition-all"
+                            >
+                              <Zap className="h-4 w-4" />
+                              Mulai Blast Step-by-Step ({guests.filter((g) => g.phone).length} tamu)
+                            </button>
+                          </>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 1 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold">1</span>
+                              Preview Data Kontak
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {guests.filter((g) => g.phone).length} kontak dengan nomor HP akan dikirim:
+                            </p>
+                            <div className="max-h-28 overflow-y-auto rounded-lg border bg-white divide-y divide-gray-50">
+                              {guests.filter((g) => g.phone).slice(0, 20).map((g) => (
+                                <div key={g.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                                  <span className="truncate flex-1 text-gray-700">{g.name}</span>
+                                  <span className="text-gray-400 font-mono ml-2">{g.phone}</span>
+                                </div>
+                              ))}
+                              {guests.filter((g) => g.phone).length > 20 && (
+                                <div className="px-3 py-1.5 text-xs text-gray-400 text-center">
+                                  ... dan {guests.filter((g) => g.phone).length - 20} lainnya
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setBlastStep(0)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors">Kembali</button>
+                              <button onClick={() => setBlastStep(2)} className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white hover:bg-amber-600 transition-colors">Lanjut</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 2 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold">2</span>
+                              Preview Template Pesan
+                            </div>
+                            <div className="rounded-lg bg-white border p-3 text-xs whitespace-pre-wrap leading-relaxed text-gray-600 font-mono max-h-48 overflow-y-auto">
+                              {(() => {
+                                const sample = guests.find((g) => g.phone);
+                                if (!sample) return "⚠ Belum ada tamu dengan nomor HP";
+                                const personalLink = `${origin}/u/${selectedInvitation?.slug}?to=${encodeURIComponent(sample.name)}`;
+                                return (
+                                  <span>
+                                    <span className="text-amber-600 font-medium block mb-1">Preview untuk: {sample.name} ({sample.phone})</span>
+                                    {waTemplate
+                                      .replace(/{nama_tamu}/g, sample.name)
+                                      .replace(/{link_undangan}/g, personalLink)}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                            <p className="text-xs text-gray-400">
+                              Tiap kontak dapat pesan dengan <strong>nama + link personal</strong> (1 campaign per kontak, template sudah di-render)
+                            </p>
+                            <div className="flex gap-2">
+                              <button onClick={() => setBlastStep(1)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors">Kembali</button>
+                              <button onClick={() => setBlastStep(3)} className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white hover:bg-amber-600 transition-colors">Lanjut</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 3 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold">3</span>
+                              Konfirmasi Pengaturan Pengiriman
+                            </div>
+                            <div className="rounded-lg border bg-white p-3 space-y-2">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Delay antar pesan:</span>
+                                <span className="font-medium text-gray-700">{blastDelay} detik</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Jitter (variasi acak):</span>
+                                <span className="font-medium text-gray-700">±{blastJitter} detik</span>
+                              </div>
+                              <div className="flex justify-between text-xs border-t pt-2">
+                                <span className="text-gray-500">Estimasi total:</span>
+                                <span className="font-medium text-gray-700">
+                                  {(() => {
+                                    const total = guests.filter((g) => g.phone).length;
+                                    const avgDelay = blastDelay + blastJitter / 2;
+                                    const seconds = total * avgDelay;
+                                    if (seconds < 60) return `${Math.round(seconds)} detik`;
+                                    if (seconds < 3600) return `~${Math.round(seconds / 60)} menit`;
+                                    return `~${Math.round(seconds / 3600)} jam`;
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setBlastStep(2)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors">Kembali</button>
+                              <button onClick={() => setBlastStep(4)} className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white hover:bg-amber-600 transition-colors">Lanjut</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 4 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold">4</span>
+                              Konfirmasi Kirim Blast
+                            </div>
+                            <div className="rounded-lg border bg-amber-50 p-3 space-y-1.5">
+                              <div className="flex justify-between text-xs"><span className="text-gray-500">Penerima:</span><span className="font-medium text-gray-700">{guests.filter((g) => g.phone).length} nomor</span></div>
+                              <div className="flex justify-between text-xs"><span className="text-gray-500">Delay:</span><span className="font-medium text-gray-700">{blastDelay}s</span></div>
+                              <div className="flex justify-between text-xs"><span className="text-gray-500">Jitter:</span><span className="font-medium text-gray-700">{blastJitter}s</span></div>
+                              <div className="flex justify-between text-xs"><span className="text-gray-500">Undangan:</span><span className="font-medium text-gray-700 truncate max-w-[150px]">{selectedInvitation?.title || "-"}</span></div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setBlastStep(3)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors">Kembali</button>
+                              <button
+                                onClick={async () => {
+                                  setBlastStep(5);
+                                  await handleBlastViaApi();
+                                }}
+                                disabled={blastingViaApi}
+                                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-2 text-xs font-medium text-white hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-colors shadow-sm shadow-amber-200"
+                              >
+                                {blastingViaApi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                                {blastingViaApi ? "Mengirim..." : "Kirim Blast"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {wablastHook.deviceStatus === "connected" && blastStep === 5 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-xs font-medium text-blue-700">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-xs font-bold">5</span>
+                              {wablastHook.blastProgress?.status === "done" ? "Pengiriman Selesai" : wablastHook.blastProgress?.status === "cancelled" ? "Pengiriman Dibatalkan" : "Proses Pengiriman"}
+                            </div>
+
+                            {wablastHook.blastProgress && (
+                              <>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-xs text-blue-600">
+                                    <span>{wablastHook.blastProgress.current} / {wablastHook.blastProgress.total}</span>
+                                    <span>{Math.round((wablastHook.blastProgress.current / wablastHook.blastProgress.total) * 100)}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-blue-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                                      style={{ width: `${(wablastHook.blastProgress.current / wablastHook.blastProgress.total) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {wablastHook.blastProgress.status === "sending" && wablastHook.blastProgress.currentName && (
+                                  <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                                    <div className="text-xs">
+                                      <span className="text-blue-700">Mengirim ke </span>
+                                      <span className="font-medium text-blue-800">{wablastHook.blastProgress.currentName}</span>
+                                      <span className="text-blue-500"> — {wablastHook.blastProgress.currentPhone}</span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                  {wablastHook.blastProgress.sent.map((s, i) => (
+                                    <div key={i} className="flex items-center gap-2 rounded-md bg-green-50 px-2 py-1 text-xs">
+                                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                      <span className="text-green-700 truncate">{s.name}</span>
+                                      <span className="text-green-500 font-mono text-[10px]">{s.phone}</span>
+                                      <span className="text-green-400 ml-auto text-[10px]">Terkirim</span>
+                                    </div>
+                                  ))}
+                                  {wablastHook.blastProgress.errors.map((e, i) => (
+                                    <div key={`err-${i}`} className="flex items-center gap-2 rounded-md bg-red-50 px-2 py-1 text-xs">
+                                      <span className="text-red-500 font-bold flex-shrink-0">✗</span>
+                                      <span className="text-red-700 truncate">{e.name}</span>
+                                      <span className="text-red-500 font-mono text-[10px]">{e.phone}</span>
+                                      <span className="text-red-400 ml-auto text-[10px] truncate max-w-[80px]" title={e.error}>{e.error}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="flex gap-2 text-xs">
+                                  <span>Terkirim: <span className="font-medium text-green-600">{wablastHook.blastProgress.sent.length}</span></span>
+                                  <span>Gagal: <span className="font-medium text-red-500">{wablastHook.blastProgress.errors.length}</span></span>
+                                </div>
+
+                                {wablastHook.blastProgress.status === "sending" && (
+                                  <button
+                                    onClick={() => wablastHook.cancelBlast()}
+                                    className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                                  >
+                                    Batalkan
+                                  </button>
+                                )}
+
+                                {wablastHook.blastProgress.status === "done" && (
+                                  <>
+                                    {wablastHook.blastProgress.errors.length > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          const origin = window.location.origin;
+                                          const slug = selectedInvitation?.slug || "";
+                                          wablastHook.blastProgress?.errors.forEach((e) => {
+                                            const link = `${origin}/u/${slug}?to=${encodeURIComponent(e.name)}`;
+                                            const msg = waTemplate
+                                              .replace(/{nama_tamu}/g, e.name)
+                                              .replace(/{link_undangan}/g, link);
+                                            const cleaned = e.phone.replace(/[^0-9]/g, "");
+                                            const prefix = cleaned.startsWith("0") ? "62" + cleaned.slice(1) : cleaned.startsWith("62") ? cleaned : "62" + cleaned;
+                                            setTimeout(() => {
+                                              window.open(`https://wa.me/${prefix}?text=${encodeURIComponent(msg)}`, "_blank");
+                                            }, 1000);
+                                          });
+                                          toast.success(`Membuka ${wablastHook.blastProgress?.errors.length} chat WA manual`);
+                                        }}
+                                        className="w-full rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 transition-colors"
+                                      >
+                                        Buka WA Manual ({wablastHook.blastProgress.errors.length} gagal)
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => { setBlastStep(0); }}
+                                      className="w-full rounded-lg bg-green-500 px-3 py-2 text-xs font-medium text-white hover:bg-green-600 transition-colors"
+                                    >
+                                      Selesai — Kembali ke Awal
+                                    </button>
+                                  </>
+                                )}
+                                {wablastHook.blastProgress.status === "cancelled" && (
+                                  <button
+                                    onClick={() => { setBlastStep(0); }}
+                                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                                  >
+                                    Kembali ke Awal
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-xl border bg-white p-4 sm:p-5 shadow-sm">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Aksi Cepat</h3>
                 <div className="space-y-2.5 sm:space-y-3">
@@ -358,7 +1250,7 @@ export default function SendClient({ invitations, allGuests, defaultInvitationId
                     {sending ? (
                       <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                     ) : <Send className="h-4 w-4" />}
-                    {sending ? "Membuka WhatsApp..." : `Blast WA ke ${guests.filter((g) => g.phone).length} Tamu`}
+                    {sending ? "Membuka WhatsApp..." : `Blast WA Manual (${guests.filter((g) => g.phone).length} tamu)`}
                   </button>
                   <button onClick={handleExportWa} disabled={guests.length === 0}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-green-600 hover:bg-green-100 disabled:opacity-40 transition-all">

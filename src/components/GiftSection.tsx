@@ -38,7 +38,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <motion.button
       onClick={handleCopy}
-      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium transition-all"
+      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium transition-all min-h-[44px] min-w-[44px] justify-center"
       style={{
         color: copied ? "#fff" : "var(--primary)",
         backgroundColor: copied ? "var(--primary)" : "color-mix(in srgb, var(--primary) 8%, transparent)",
@@ -76,11 +76,13 @@ function BankCard({
   bankName,
   accountNumber,
   accountHolder,
+  label,
   index,
 }: {
   bankName?: string;
   accountNumber: string;
   accountHolder?: string;
+  label?: string;
   index: number;
 }) {
   const ref = useRef(null);
@@ -95,7 +97,6 @@ function BankCard({
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.1 }}
     >
-      {/* Subtle shimmer gradient overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -104,7 +105,6 @@ function BankCard({
       />
 
       <div className="relative flex items-stretch">
-        {/* Left accent stripe */}
         <div
           className="w-[3px] flex-shrink-0 rounded-l-2xl"
           style={{
@@ -113,7 +113,14 @@ function BankCard({
         />
 
         <div className="flex-1 px-5 py-4 sm:px-6 sm:py-5">
-          {/* Bank label */}
+          {label && (
+            <p
+              className="mb-2 text-[10px] sm:text-[11px] font-medium uppercase tracking-[.2em]"
+              style={{ color: "var(--secondary)" }}
+            >
+              {label}
+            </p>
+          )}
           <div className="flex items-center gap-2.5 mb-3">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg"
@@ -131,7 +138,6 @@ function BankCard({
             </span>
           </div>
 
-          {/* Account number + copy */}
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-xl sm:text-2xl font-semibold tracking-[.14em] tabular-nums leading-none" style={{ color: "var(--text)" }}>
@@ -358,6 +364,7 @@ export default function GiftSection({ gifts }: { gifts: GiftInfo[] }) {
                   bankName={gift.bankName}
                   accountNumber={gift.accountNumber!}
                   accountHolder={gift.accountHolder}
+                  label={gift.label}
                   index={index}
                 />
               );

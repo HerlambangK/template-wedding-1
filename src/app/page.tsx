@@ -12,11 +12,14 @@ import EventSection from "@/components/EventSection";
 import InteractiveMapSection from "@/components/InteractiveMapSection";
 import CountdownSection from "@/components/CountdownSection";
 import GiftSection from "@/components/GiftSection";
+import GallerySection from "@/components/GallerySection";
 import RSVPSection from "@/components/RSVPSection";
 import InfoPopup from "@/components/InfoPopup";
 import FooterSection from "@/components/FooterSection";
 import MusicPlayer from "@/components/MusicPlayer";
+import ScrollProgress from "@/components/ScrollProgress";
 import Particles from "@/components/Particles";
+import { initAndPlayAudio } from "@/lib/audio-player";
 
 export default function Home() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +32,9 @@ export default function Home() {
   }, []);
 
   const handleOpen = useCallback(() => {
+    if (config.features.music) {
+      initAndPlayAudio(config.music.src);
+    }
     setIsOpen(true);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -53,6 +59,7 @@ export default function Home() {
           <>
             {config.features.music && <MusicPlayer src={config.music.src} />}
             {config.features.particles && <Particles />}
+            <ScrollProgress />
 
             <HeroSection
               groomName={config.groom.name}
@@ -70,6 +77,10 @@ export default function Home() {
 
             {config.features.countdown && (
               <CountdownSection date={config.makanKeluarga.date} />
+            )}
+
+            {config.features.gallery && (
+              <GallerySection images={config.gallery} />
             )}
 
             {config.features.gifts && <GiftSection gifts={config.gifts} />}

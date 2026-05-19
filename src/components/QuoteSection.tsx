@@ -28,11 +28,11 @@ export default function QuoteSection({ quotes }: { quotes: Quote[] }) {
               ❝
             </span>
             {quote.arabic && (
-              <p className="mt-4 sm:mt-6 text-lg sm:text-2xl leading-relaxed" style={{ color: "var(--primary)", fontFamily: "system-ui" }} dir="rtl">
+              <p className="mt-4 sm:mt-6 text-lg sm:text-2xl leading-relaxed" style={{ color: "var(--primary)", fontFamily: "var(--font-arabic)" }} dir="rtl">
                 {quote.arabic}
               </p>
             )}
-            <p className="font-[family-name:var(--font-cormorant)] mt-4 sm:mt-6 text-base sm:text-xl leading-relaxed italic" style={{ color: "var(--text)", opacity: 0.8 }}>
+            <p className="font-[family-name:var(--font-lora)] mt-4 sm:mt-6 text-base sm:text-xl leading-relaxed" style={{ color: "var(--text)", opacity: 0.8 }}>
               {quote.text}
             </p>
             <p className="font-[family-name:var(--font-lora)] mt-3 sm:mt-4 text-xs sm:text-sm" style={{ color: "var(--primary)" }}>

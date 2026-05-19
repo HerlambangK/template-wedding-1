@@ -176,8 +176,8 @@ export const config = {
 		primary: '#C8A96B',
 		primaryLight: '#D4A843',
 		primaryDark: '#A68B4B',
-		secondary: '#C8A96B',
-		secondaryLight: '#D4A843',
+		secondary: '#7C8C6E',
+		secondaryLight: '#9AAB8C',
 		background: '#F7F1E8',
 		backgroundAlt: '#FFFFFF',
 		backgroundDark: '#E8E0D0',
@@ -195,8 +195,8 @@ export const config = {
 		fullName: 'Herlambang Kuswicaksonojati',
 		father: '',
 		mother: '',
-		childOrder: 'Putra tercinta',
-		photo: '',
+		childOrder: '',
+		photo: '/images/ree-lambang/lambang-kids.png',
 		instagram: '',
 	},
 	bride: {
@@ -204,18 +204,19 @@ export const config = {
 		fullName: 'Rela Hastuti',
 		father: '',
 		mother: '',
-		childOrder: 'Putri tercinta',
-		photo: '',
+		childOrder: '',
+		photo: '/images/ree-lambang/ree-kids.png',
 		instagram: '',
 	},
 
 	// 📅 Tanggal & Acara
 	makanKeluarga: {
 		date: '2026-05-29',
-		time: '09:30',
-		endTime: '10:30',
+		time: '10:00',
+		endTime: '11:00',
 		venue: 'NAWASENA GARDEN BALLROOM',
-		address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
+		address:
+			'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
 		mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 	},
 
@@ -223,7 +224,8 @@ export const config = {
 	locations: {
 		familyGathering: {
 			name: 'NAWASENA GARDEN BALLROOM',
-			address: 'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
+			address:
+				'Jl. H.A. Salim No. 90, Pandean, Manguharjo, Kota Madiun, Jawa Timur',
 			mapsUrl: 'https://maps.app.goo.gl/SCFZSetJYAHDEHa67',
 		},
 	},
@@ -241,7 +243,7 @@ export const config = {
 	// 🎵 Musik
 	music: {
 		src: '/music/hindia-a-feeling.mp3',
-		title: 'Islamic Wedding Nasheed',
+		title: 'Wedding Music',
 	},
 
 	// 🖼️ Gallery — tambah/kurangi sesuai kebutuhan
@@ -260,7 +262,20 @@ export const config = {
 			type: 'bank',
 			bankName: 'BCA',
 			accountNumber: '8950648229',
-			accountHolder: 'Herlambang',
+			accountHolder: 'Herlambang Kuswicaksonojati',
+			label: 'Rekening Mempelai Pria',
+		},
+		{
+			type: '',
+			bankName: '',
+			accountNumber: '',
+			accountHolder: '',
+			label: '',
+		},
+		{
+			type: '',
+			qrisImage: '',
+			label: '',
 		},
 	],
 
@@ -275,7 +290,7 @@ export const config = {
 		threeD: true, // 3D elements (rings, hearts)
 		rsvp: true, // RSVP form
 		gifts: true, // Gift/amplop section
-		gallery: false, // Photo gallery
+		gallery: true, // Photo gallery
 		countdown: true, // Countdown timer
 		guestMessages: true, // Show previous guest messages
 	},

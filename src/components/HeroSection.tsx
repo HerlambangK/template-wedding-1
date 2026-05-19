@@ -22,14 +22,14 @@ export default function HeroSection({ groomName, brideName, date }: HeroProps) {
 
   return (
     <section
-      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+      className="relative flex min-h-screen items-center justify-center overflow-visible"
       style={{ backgroundColor: "var(--bg-alt)" }}
     >
       {config.features.threeD && <Scene3D variant="hero" />}
 
       {/* Background pattern */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 -z-10 opacity-[0.03]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23888'%3E%3Cpath d='M40 0l40 40-40 40L0 40z' fill-opacity='.06'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
@@ -42,7 +42,7 @@ export default function HeroSection({ groomName, brideName, date }: HeroProps) {
           transition={{ duration: 1 }}
         >
           <motion.p
-            className="font-[family-name:var(--font-cormorant)] text-base sm:text-lg leading-relaxed"
+            className="font-[family-name:var(--font-arabic)] text-base sm:text-lg leading-relaxed"
             style={{ color: "var(--secondary)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -18,8 +18,10 @@ import GuestBookSection from "@/components/GuestBookSection";
 import InteractiveMapSection from "@/components/InteractiveMapSection";
 import FooterSection from "@/components/FooterSection";
 import MusicPlayer from "@/components/MusicPlayer";
+import ScrollProgress from "@/components/ScrollProgress";
 import InfoPopup from "@/components/InfoPopup";
 import Particles from "@/components/Particles";
+import { initAndPlayAudio } from "@/lib/audio-player";
 
 // Convert DB invitation to component-friendly props
 function mapInvitation(inv: Invitation) {
@@ -118,9 +120,12 @@ export default function PublicInvitation({ invitation, messages }: Props) {
   }, []);
 
   const handleOpen = useCallback(() => {
+    if (data.features.music && data.musicUrl) {
+      initAndPlayAudio(data.musicUrl);
+    }
     setIsOpen(true);
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [data.features.music, data.musicUrl]);
 
   return (
     <main className="relative min-h-screen">
@@ -140,8 +145,9 @@ export default function PublicInvitation({ invitation, messages }: Props) {
       {isOpen && (
         <>
           {data.features.music && data.musicUrl && <MusicPlayer src={data.musicUrl} />}
-          <InfoPopup />
           {data.features.particles && <Particles />}
+          <ScrollProgress />
+          <InfoPopup />
 
           <HeroSection
             groomName={data.groom.name}

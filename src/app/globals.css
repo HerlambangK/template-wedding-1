@@ -22,6 +22,7 @@
   --font-poppins: var(--font-poppins);
   --font-cormorant: var(--font-poppins);
   --font-lora: var(--font-poppins);
+  --font-arabic: var(--font-amiri), serif;
 }
 
 body {

@@ -35,34 +35,34 @@ export default function FooterSection({
 					background: `linear-gradient(180deg, var(--cover-bg-mid) 0%, var(--cover-bg) 100%)`,
 				}}
 			>
-				<motion.p
-					className='font-[family-name:var(--font-cormorant)] text-base leading-relaxed max-w-sm mx-auto px-6'
-					style={{ color: 'var(--cover-text)', opacity: 0.5 }}
-					initial={{ y: 20, opacity: 0 }}
-					animate={isInView ? { y: 0, opacity: 0.5 } : {}}
-					transition={{ delay: 0.2 }}
-				>
+        <motion.p
+          className='font-[family-name:var(--font-lora)] text-base leading-relaxed max-w-sm mx-auto px-6'
+          style={{ color: 'var(--cover-text)', opacity: 0.5 }}
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 0.5 } : {}}
+          transition={{ delay: 0.2 }}
+        >
 					Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila
 					Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu
 				</motion.p>
 
-				<motion.p
-					className='font-[family-name:var(--font-cormorant)] mt-8 text-xl'
-					style={{ color: 'var(--primary-light)', opacity: 0.65 }}
-					initial={{ y: 20, opacity: 0 }}
-					animate={isInView ? { y: 0, opacity: 0.65 } : {}}
-					transition={{ delay: 0.4 }}
-				>
+          <motion.p
+            className="mt-8 text-xl"
+            style={{ color: "var(--primary-light)", opacity: 0.65, fontFamily: "var(--font-arabic)" }}
+            initial={{ y: 20, opacity: 0 }}
+            animate={isInView ? { y: 0, opacity: 0.65 } : {}}
+            transition={{ delay: 0.4 }}
+          >
 					وَالسَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ وَبَرَكَاتُهُ
 				</motion.p>
 
-				<motion.p
-					className='font-[family-name:var(--font-cormorant)] mt-2 text-base tracking-wider'
-					style={{ color: 'var(--primary-light)', opacity: 0.5 }}
-					initial={{ y: 20, opacity: 0 }}
-					animate={isInView ? { y: 0, opacity: 0.5 } : {}}
-					transition={{ delay: 0.5 }}
-				>
+        <motion.p
+          className='font-[family-name:var(--font-lora)] mt-2 text-base tracking-wider'
+          style={{ color: 'var(--primary-light)', opacity: 0.5 }}
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 0.5 } : {}}
+          transition={{ delay: 0.5 }}
+        >
 					Wassalamu&rsquo;alaikum warahmatullahi wabarakatuh
 				</motion.p>
 

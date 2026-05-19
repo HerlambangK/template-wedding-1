@@ -76,7 +76,7 @@ export default function RSVPSection({ groomName, brideName, invitationId, guestN
         >
           {submitted ? (
             <div className="py-8 text-center">
-              <CheckCircle className="mx-auto h-12 w-12" style={{ color: "var(--secondary)" }} />
+              <CheckCircle className="mx-auto h-12 w-12" style={{ color: "var(--primary)" }} />
               <p className="font-[family-name:var(--font-playfair)] mt-4 text-xl italic" style={{ color: "var(--text)" }}>
                 Terima Kasih!
               </p>
@@ -147,7 +147,7 @@ export default function RSVPSection({ groomName, brideName, invitationId, guestN
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-[family-name:var(--font-cormorant)] text-sm tracking-[0.15em] uppercase text-white transition-all hover:opacity-90 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 min-h-[44px] font-[family-name:var(--font-cormorant)] text-sm tracking-[0.15em] uppercase text-white transition-all hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: "var(--primary)" }}
               >
                 <Send className="h-4 w-4" />

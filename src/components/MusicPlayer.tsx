@@ -1,40 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Music, Music2 } from "lucide-react";
+import { getAudio, getAudioSrc } from "@/lib/audio-player";
 
 export default function MusicPlayer({ src }: { src: string }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasValidSrc, setHasValidSrc] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(() => {
+    const audio = getAudio();
+    return audio && getAudioSrc() === src ? !audio.paused : false;
+  });
 
-  useEffect(() => {
-    const audio = new Audio();
-    audio.volume = 0.3;
-    audio.loop = true;
-    audio.preload = "auto";
-
-    audio.addEventListener("canplaythrough", () => {
-      setHasValidSrc(true);
-    });
-
-    audio.addEventListener("error", () => {
-      setHasValidSrc(false);
-    });
-
-    audio.src = src;
-    audioRef.current = audio;
-
-    return () => {
-      audio.pause();
-      audio.src = "";
-    };
-  }, [src]);
+  const hasValidSrc = getAudioSrc() === src;
 
   const toggleMusic = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || !hasValidSrc) return;
+    const audio = getAudio();
+    if (!audio || getAudioSrc() !== src) return;
 
     if (isPlaying) {
       audio.pause();
@@ -42,18 +23,12 @@ export default function MusicPlayer({ src }: { src: string }) {
     } else {
       audio.play().then(() => setIsPlaying(true)).catch(() => {});
     }
-  }, [isPlaying, hasValidSrc]);
-
-  useEffect(() => {
-    if (!hasValidSrc || !audioRef.current) return;
-    audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-  }, [hasValidSrc]);
+  }, [isPlaying, src]);
 
   if (!hasValidSrc) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex items-center justify-center">
-      {/* Wave rings when playing */}
       {isPlaying && [0, 1, 2].map((i) => (
         <motion.div
           key={i}

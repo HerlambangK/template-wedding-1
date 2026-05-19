@@ -248,12 +248,17 @@ export const config = {
 
 	// 🖼️ Gallery — tambah/kurangi sesuai kebutuhan
 	gallery: [
-		{ src: '/images/gallery/1.jpg', alt: 'Prewedding 1' },
-		{ src: '/images/gallery/2.jpg', alt: 'Prewedding 2' },
-		{ src: '/images/gallery/3.jpg', alt: 'Prewedding 3' },
-		{ src: '/images/gallery/4.jpg', alt: 'Prewedding 4' },
-		{ src: '/images/gallery/5.jpg', alt: 'Prewedding 5' },
-		{ src: '/images/gallery/6.jpg', alt: 'Prewedding 6' },
+		{ src: '/images/gallery/prewed-3.jpeg', alt: 'Tatapan Penuh Cinta' },
+		{ src: '/images/gallery/prewed-2.jpeg', alt: 'Bersama Selamanya' },
+		{ src: '/images/gallery/prewed-1.jpeg', alt: 'Dekapan Terindah' },
+		{ src: '/images/gallery/prewed-4.jpeg', alt: 'Bahagiamu, Bahagiaku' },
+		{ src: '/images/gallery/prewed-5.jpeg', alt: 'Dalam Diam, Kita Bicara' },
+		{ src: '/images/gallery/prewed-9.jpeg', alt: 'Terang di Pelukanmu' },
+		{ src: '/images/gallery/prewed-8.jpeg', alt: 'Rasa Aman Bersamamu' },
+		{ src: '/images/gallery/prewed-6.jpeg', alt: 'Warna Baru dalam Hidupku' },
+		{ src: '/images/gallery/prewed-7.jpeg', alt: 'Hangatnya Cinta Kita' },
+		{ src: '/images/gallery/prewed-10.jpeg', alt: 'Langkah Indah Bersamamu' },
+		{ src: '/images/gallery/prewed-11.jpeg', alt: '#TEMPUHSELAMANYA' },
 	],
 
 	// 💳 Gift / Amplop Digital
